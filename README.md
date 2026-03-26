@@ -4,6 +4,8 @@
 
 We are **building in public** — the repo lives on GitHub, and we share progress openly (say hi on X if you try it). Perfect is not the goal; **clear and learnable** is.
 
+**Status (March 2026):** V2 roadmap **Stages 1–11 done** — `hello-cube` **fps-test** (**F**) is a small playable FPS loop (HUD, health, kills, win/lose, respawn). **Stage 12** = WebSocket multiplayer ([`PROMPT.md`](./PROMPT.md)). Full table: [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md).
+
 ---
 
 ## ELI5: What is this?
@@ -31,14 +33,15 @@ Arcane Engine is the **folder structure + glue** for those three ideas. It uses 
 
 The big-picture plan is in [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md): a **small multiplayer-style FPS in the browser** (walk, shoot, simple HUD, then networking). We ship it **stage by stage**.
 
-**Done so far (Stages 1–9 on that roadmap):**
+**Done so far (Stages 1–11 on that roadmap):**
 
 - Core ECS, renderer, input, scenes, CLI, and the **hello-cube** demo
-- **Physics** (Rapier): floors, falling boxes, **kinematic** player bodies, **raycast** (for shooting later)
+- **Physics** (Rapier): floors, falling boxes, **kinematic** player bodies, **raycast** (hitscan)
 - **First-person**: mouse look with **pointer lock**, move **relative to where you look**
 - **Character controller**: walk and jump in a room **without falling through the floor or clipping walls**
+- **Weapons + hitscan** and **HUD + game state** in **fps-test** (**F**): crosshair, health bar, kills, death/win overlays, **R** respawn, optional floor damage tile
 
-**Next up:** Stage 10 — **weapons + hitscan** (click to shoot, health, targets).
+**Next up:** Stage 12 — **multiplayer** (WebSocket server, synced ghost players).
 
 If the PRD’s checklist table ever looks stale, **the code and tests win**.
 
@@ -71,7 +74,7 @@ arcane-engine/
 |  |- core/            # ECS, world, queries, systems, game loop, scenes
 |  |- renderer/        # Three.js bridge and render components
 |  |- input/           # keyboard, mouse, movement, orbit + FPS camera
-|  |- physics/         # Rapier: bodies, colliders, raycast, character controller
+|  |- physics/        # Rapier: bodies, colliders, raycast, character controller
 |  `- create-arcane/   # starter project scaffolder
 |- templates/
 |  `- starter/         # default generated project
@@ -82,6 +85,7 @@ arcane-engine/
 |- AGENTS.md
 |- CLAUDE.md
 |- ARCANE_ENGINE_PRD_V2.md
+|- PROMPT.md         # handoff for the next milestone (Stage 12)
 `- package.json
 ```
 
@@ -112,7 +116,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 |-----|----------------|
 | **Enter** | Gameplay scene (cube world, WASD) |
 | **P** | Physics playground (cubes + gravity) |
-| **F** | **FPS test** — click the canvas to capture the mouse, then WASD, Space to jump, Escape back to title |
+| **F** | **FPS test** — click canvas for pointer lock; WASD, Space, shoot targets; HUD; **R** respawn if dead; Esc → title |
 
 ---
 

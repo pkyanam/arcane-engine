@@ -26,9 +26,9 @@ Simple mental model:
 
 **Roadmap:** See [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) for the full **browser multiplayer FPS** plan (Stages 1–12). If that document’s status table disagrees with the repo, **trust the code and tests**.
 
-**Current stage:** **Stage 10 complete** on the V2 track: **`InputState.mouseButtons`**, example-local **`Health`** / **`Damage`** / **`HitFlash`**, **`weaponSystem`**, **`healthSystem`**, **`hitFlashRestoreSystem`**, collider lookup for **`raycast`** hits, and shootable targets + feedback in **`fps-test`** (`examples/hello-cube`).
+**Current stage:** **Stage 11 complete** on the V2 track: **`fps-test`** includes **`#arcane-hud`** (crosshair, health bar, kill counter), example-local **`GameState`**, **`ShootableTarget`**, **`gameStateSystem`**, **`damageZoneSystem`**, player **`Health`**, death/win overlays, **R** respawn, and **`healthSystem`** integration for kills + player death (see `examples/hello-cube`).
 
-**What comes next:** **Stage 11 — HUD + Game State** (PRD §7): DOM HUD (`#arcane-hud`), crosshair, health bar, kill counter, **`GameState`**, death/win overlays, **R** respawn. **Stage 12** is multiplayer (WebSocket); see PRD §8.
+**What comes next:** **Stage 12 — Multiplayer** (PRD §8): `packages/server`, WebSocket relay, **`networkSyncSystem`**, ghost **`RemotePlayer`** meshes, **M** key scene. Handoff: **[`PROMPT.md`](./PROMPT.md)**.
 
 ---
 
@@ -51,6 +51,7 @@ arcane-engine/
 |- CLAUDE.md
 |- AGENTS.md
 |- ARCANE_ENGINE_PRD_V2.md
+|- PROMPT.md
 `- package.json
 ```
 
@@ -174,7 +175,7 @@ import type { CameraFollowOptions, InputManagerHandle } from '@arcane-engine/inp
 
 Import from `@arcane-engine/physics`. Call **`await initPhysics()`** once at app startup before `createPhysicsContext`.
 
-Typical **`fps-test`** stack: `hitFlashRestoreSystem` → `physicsSystem` → `characterControllerSystem` → `fpsCameraSystem` → `weaponSystem` → `healthSystem` → `renderSystem`.
+Typical **`fps-test`** stack: `hitFlashRestoreSystem` → `physicsSystem` → `characterControllerSystem` → `fpsCameraSystem` → `weaponSystem` → `damageZoneSystem` → `healthSystem` → `gameStateSystem` → `renderSystem`.
 
 See [`packages/physics/README.md`](./packages/physics/README.md) for collider shapes, `raycast`, and body types (`fixed`, `dynamic`, `kinematic`).
 
@@ -246,10 +247,10 @@ If something is technically correct but hard to explain, prefer the simpler vers
 
 ## Current Baseline
 
-- **Stages 1–10** (PRD V2 FPS track) are implemented and tested
+- **Stages 1–11** (PRD V2 FPS track) are implemented and tested
 - Physics package: fixed / dynamic / **kinematic** bodies, **`raycast()`**, **`CharacterController`** + **`characterControllerSystem`**
 - Input package: **`FPSCamera`**, **`fpsCameraSystem`**, **`fpsMovementSystem`**, **`InputState.mouseButtons`**, pointer lock via **`createInputManager(world, canvas)`**
-- **hello-cube**: title, gameplay, physics (**P**), **fps-test** (**F**) with hitscan combat; app boot awaits **`initPhysics()`**; root **`pnpm test`** builds **input** (and core/renderer/physics) before tests
+- **hello-cube**: title, gameplay, physics (**P**), **fps-test** (**F**) with hitscan combat, DOM HUD, **`GameState`**, and damage-zone player HP; app boot awaits **`initPhysics()`**; root **`pnpm test`** builds **input** (and core/renderer/physics) before tests
 - `packages/create-arcane` scaffolds starter projects; `templates/starter` builds
 - root `README.md` and `CONTRIBUTING.md` exist; public APIs have JSDoc
 - verified from repo root: `pnpm test`, `pnpm typecheck`, `pnpm build`
@@ -306,7 +307,7 @@ Valid scopes: `core`, `renderer`, `input`, `physics`, `create-arcane`, `examples
 
 From **PRD V2** and beyond the current stage:
 
-- **Stage 12** (multiplayer) before **Stage 11** (HUD) unless the team explicitly defers HUD
+- **Stage 12** (multiplayer) is next; Stage 11 (HUD) is complete unless you fork an older baseline
 - Full **asset pipeline** / GLTF (procedural geometry is the norm for now)
 - **Audio**
 - **Anticheat**, production-grade networking product

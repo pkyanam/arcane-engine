@@ -9,7 +9,7 @@ Version 2.0 • March 2026
 
 This document extends the original Arcane Engine PRD (v0.1) beyond the Stage 6 MVP.
 
-**Stages 1–10** of the V2 FPS track are **complete** in the repo (through weapons + hitscan in `fps-test`). Stages **11–12** remain to reach a functional multiplayer first-person shooter in the browser.
+**Stages 1–11** of the V2 FPS track are **complete** in the repo (through HUD + `GameState` in `fps-test`). **Stage 12** remains to reach a functional multiplayer first-person shooter in the browser.
 
 ### 1.1 V1 Recap (Stages 1–7, all complete)
 
@@ -76,7 +76,7 @@ hello-cube example
 4. Character controller system → applies WASD + gravity via Rapier kinematic body
 5. FPS camera system → positions camera at player eye level, applies yaw/pitch
 6. Weapon system → on fire input, casts ray, writes `Damage` to hit entity
-7. Health system → processes `Damage`, destroys entity at 0 hp; updates `GameState` once Stage 11 exists
+7. Health system → processes `Damage`, destroys non-player entities at 0 hp; clamps player HP and sets `GameState.phase`; increments `GameState.kills` for `ShootableTarget` destroys
 8. Network sync system (Stage 12) → sends local position to server, receives + applies remote positions
 9. Render system → syncs ECS transforms to Three.js, submits draw call
 
@@ -304,7 +304,7 @@ Extend `InputState` to track `mouseButtons: Set<number>` (0 = left). Wire `mouse
 
 ## 7. Stage 11 — HUD + Game State
 
-**Status:** Planned — **next**. Depends on Stage 10 (complete).
+**Status:** ✅ Complete. Depends on Stage 10 (complete).
 
 ### Goal
 
@@ -355,7 +355,7 @@ Extend `weaponSystem` so that if the ray hits the player entity (multiplayer Sta
 
 ## 8. Stage 12 — Multiplayer
 
-**Status:** Planned. Depends on Stages 8, 10, and (for a polished loop) **Stage 11** HUD / game state.
+**Status:** **Next.** Stages 8–11 are complete in the repo (including HUD / `GameState` in `fps-test`).
 
 ### Goal
 
@@ -460,26 +460,25 @@ The multiplayer scene (`scenes/multiplayer.ts`) creates the `WebSocket`, waits f
 | 8 | FPS Camera + Pointer Lock | ✅ done | FPS look, direction-relative move (`fpsMovementSystem`), pointer lock |
 | 9 | Character Controller + Map | ✅ done | Kinematic CC, `fps-test` scene, walls/floor/jump |
 | 10 | Weapons + Hitscan | ✅ done | Hitscan, example `Health` / `Damage`, `mouseButtons`, targets |
-| 11 | HUD + Game State | 🔲 **next** | Crosshair, score, respawn |
-| 12 | Multiplayer | 🔲 | WebSocket, ghost players, shoot sync |
+| 11 | HUD + Game State | ✅ done | `#arcane-hud`, `GameState`, kills, death/win, R respawn, damage zone |
+| 12 | Multiplayer | 🔲 **next** | WebSocket, ghost players, shoot sync |
 
 ---
 
 ## 10. Agent Workflow Notes
 
-Stages **7b through 10** are complete. **Stage 11** (HUD + `GameState`) is the next bounded session-sized chunk; **Stage 12** (multiplayer) follows.
+Stages **7b through 11** are complete. **Stage 12** (multiplayer) is the next bounded session-sized chunk.
 
-Stage 12 (server) can be started in a Codex sandbox in parallel with Stage 11, since the server package has no browser dependencies — but the client multiplayer scene will benefit from Stage 11 overlays and kill tracking.
+Stage 12 (server) can be started in a Codex sandbox in parallel with other work, since the server package has no browser dependencies.
 
 Codex is well-suited for:
-- Stage 11 HUD DOM code (isolated, clear spec)
 - Stage 12 server (small, self-contained Node.js file)
 
 Claude Code is well-suited for:
-- Stage 11 (ECS `GameState`, wiring kills / player HP into DOM, respawn + win flow in `fps-test` or a thin wrapper scene)
 - Stage 12 client (ghost entities, `networkSyncSystem`, scene registration)
 
-**Agent handoff (Stage 11):** [`CURSOR_STAGE11_PROMPT.md`](./CURSOR_STAGE11_PROMPT.md) (companion to the completed [`CURSOR_STAGE10_PROMPT.md`](./CURSOR_STAGE10_PROMPT.md)).
+**Handoff for the next session:** [`PROMPT.md`](./PROMPT.md) (Stage 12).  
+**Archived Stage 11 prompt:** [`CURSOR_STAGE11_PROMPT.md`](./CURSOR_STAGE11_PROMPT.md).
 
 ---
 

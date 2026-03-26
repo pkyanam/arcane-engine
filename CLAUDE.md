@@ -24,9 +24,9 @@ Core model:
 
 **Roadmap:** [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) describes the path to a small **multiplayer first-person shooter** in the browser (Stages 1–12). The checklist table in §9 of that doc may lag the repo; treat the codebase and this file as the source of truth for what is already shipped.
 
-**Current stage:** **Stage 10 complete** on the V2 track — through **Weapons + Hitscan** (`InputState.mouseButtons`, example-local `Health` / `Damage` / `HitFlash`, `weaponSystem`, `healthSystem`, `hitFlashRestoreSystem`, shootable targets in `examples/hello-cube/scenes/fps-test.ts`). Stages **7**–**9** remain as documented in the PRD; **10** adds hitscan combat and collider-to-entity resolution in the example.
+**Current stage:** **Stage 11 complete** on the V2 track — through **HUD + Game State** in `examples/hello-cube`: `#arcane-hud` (crosshair, health bar, kills), example-local **`GameState`** / **`ShootableTarget`**, **`gameStateSystem`**, **`damageZoneSystem`**, player **`Health`**, death / win overlays, **R** respawn, **`healthSystem`** kill counting and player death clamp. Prior stages **7**–**10** remain as in the PRD (physics through hitscan).
 
-**Next step (per PRD V2 §7):** **Stage 11 — HUD + Game State** (`GameState`, DOM HUD, crosshair, kill counter, death/win overlays, respawn). Do not skip to Stage 12 multiplayer until Stage 11 is specified and agreed (or the team explicitly defers HUD).
+**Next step (per PRD V2 §8):** **Stage 12 — Multiplayer** (`packages/server`, WebSocket, `networkSyncSystem`, ghost players). Start from **[`PROMPT.md`](./PROMPT.md)**. HUD and `GameState` from Stage 11 are the client foundation for overlays and scoring.
 
 ---
 
@@ -49,6 +49,7 @@ arcane-engine/
 |- AGENTS.md
 |- CLAUDE.md
 |- ARCANE_ENGINE_PRD_V2.md
+|- PROMPT.md         # next milestone handoff (Stage 12)
 `- package.json
 ```
 
@@ -191,7 +192,7 @@ CharacterController
 - pure functions only
 - signature `(world: World, dt: number) => void`
 - do not hide important world state in external mutable closures
-- registration order matters (e.g. in `fps-test`: hit flash restore → physics → character controller → FPS camera → weapon → health → render)
+- registration order matters (e.g. in `fps-test`: hit flash restore → physics → character controller → FPS camera → weapon → damage zone → health → game state → render)
 
 ### Naming
 
@@ -242,10 +243,10 @@ The README should stay understandable to someone who is new to browser game tool
 
 ## Current Baseline
 
-- Stages **1–10** of the **PRD V2** FPS track are implemented: core through **weapons + hitscan** in the example
+- Stages **1–11** of the **PRD V2** FPS track are implemented: core through **HUD + game state** in the example (`GameState`, DOM HUD, damage zone, respawn, win)
 - `packages/physics`: Rapier WASM, fixed/dynamic/**kinematic** bodies, box colliders, gravity sync for dynamic bodies, **`raycast()`**, **`CharacterController`** + **`characterControllerSystem`**
 - `packages/input`: **`FPSCamera`**, **`fpsCameraSystem`**, **`fpsMovementSystem`**, **`InputState.mouseButtons`**, optional canvas + **pointer lock** in `createInputManager`
-- `examples/hello-cube`: scenes **`title`**, **`gameplay`**, **`physics`** (P), **`fps-test`** (F) with shootable targets, **`weaponSystem`** / **`healthSystem`** / **`hitFlashRestoreSystem`**; `main.ts` awaits **`initPhysics()`**; root **`pnpm test`** builds **core → renderer → input → physics** before workspace tests
+- `examples/hello-cube`: scenes **`title`**, **`gameplay`**, **`physics`** (P), **`fps-test`** (F) with HUD DOM, **`gameStateSystem`**, **`damageZoneSystem`**, **`weaponSystem`** / **`healthSystem`** / **`hitFlashRestoreSystem`**; `main.ts` awaits **`initPhysics()`**; root **`pnpm test`** builds **core → renderer → input → physics** before workspace tests
 - `packages/create-arcane` and `templates/starter` verified locally
 - public package APIs documented with JSDoc
 - repo verification from root: `pnpm test`, `pnpm typecheck`, `pnpm build`
@@ -308,4 +309,4 @@ Aligned with **PRD V2 §1.3** and post–Stage-12 ideas:
 - WebGPU renderer swap
 - generic plugin marketplace
 
-Follow the PRD order: **Stage 11** (HUD) before **Stage 12** (multiplayer) unless the team explicitly defers HUD.
+**Stage 11** (HUD) is complete; **Stage 12** (multiplayer) is next unless deferred.

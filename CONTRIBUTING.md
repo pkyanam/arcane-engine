@@ -5,6 +5,7 @@ Arcane Engine is intentionally small. Contributions should make the framework ea
 ## Start Here
 
 - Read `AGENTS.md` before changing code or adding files.
+- For the active milestone, read **`PROMPT.md`** (handoff + scope).
 - Keep work aligned with the current stage and PRD scope.
 - Prefer small, reviewable changes over broad framework expansion.
 
@@ -54,7 +55,7 @@ When adding framework features, preserve the existing package boundaries:
 
 ## Guidance For AI Agents
 
-- Re-check `AGENTS.md` and any explicit handoff notes before making assumptions.
+- Re-check `AGENTS.md`, **`PROMPT.md`**, and any archived Cursor prompts before making assumptions.
 - Inspect the existing implementation first; do not invent missing architecture if a lighter extension will work.
 - Avoid feature creep. Stage work should feel polished, not bigger.
 - Prefer example-local helpers for demo behavior instead of expanding package APIs just to support one example.
@@ -66,11 +67,9 @@ When adding framework features, preserve the existing package boundaries:
 
 Do not add these unless a task explicitly asks for them:
 
-- physics
 - asset pipelines
 - audio
-- collision
 - UI frameworks
-- networking
+- networking (in scope only for **PRD Stage 12** — see **`PROMPT.md`**)
 - plugin systems
 - WebGPU renderer work

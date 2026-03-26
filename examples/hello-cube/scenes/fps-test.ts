@@ -24,6 +24,10 @@ import {
 import { MeshRef, Position, renderSystem, Rotation, spawnMesh } from '@arcane-engine/renderer';
 import * as THREE from 'three';
 import { Health } from '../src/components/health.js';
+import { GameState } from '../src/components/gameState.js';
+import { ShootableTarget } from '../src/components/shootableTarget.js';
+import { damageZoneSystem } from '../src/damageZoneSystem.js';
+import { gameStateSystem, type FpsHudHandles } from '../src/gameStateSystem.js';
 import { getGameContext } from '../src/runtime/gameContext.js';
 import { requestSceneChange } from '../src/runtime/sceneTransitions.js';
 import { healthSystem } from '../src/healthSystem.js';
@@ -35,7 +39,11 @@ let inputHandle: ReturnType<typeof createInputManager> | undefined;
 let sceneObjects: THREE.Object3D[] = [];
 let geometries: THREE.BufferGeometry[] = [];
 let materials: THREE.Material[] = [];
-let overlay: HTMLDivElement | undefined;
+const PLAYER_SPAWN = { x: 0, y: 2, z: 0 };
+const PLAYER_MOVE_SPEED = 5;
+const PLAYER_JUMP_SPEED = 6;
+
+let hudRoot: HTMLDivElement | undefined;
 let muzzleLayer: HTMLDivElement | undefined;
 let muzzleTimeout: ReturnType<typeof setTimeout> | undefined;
 let escListener: ((e: KeyboardEvent) => void) | undefined;
@@ -62,6 +70,36 @@ function spawnFixedBlock(
   addComponent(world, entity, BoxCollider, { ...half, friction: 0.75 });
 }
 
+/** Floor top in this scene (main slab: center y=0, half height 0.25). */
+const FLOOR_TOP_Y = 0.25;
+
+/**
+ * Emissive pad flush on the floor — no physics (damage uses AABB in `damageZoneSystem` only).
+ */
+function spawnHazardFloorPad(
+  world: World,
+  centerXZ: { x: number; z: number },
+  halfXZ: { hx: number; hz: number },
+  thickness: number,
+): void {
+  const { ctx } = getGameContext();
+  const halfY = thickness / 2;
+  const center = { x: centerXZ.x, y: FLOOR_TOP_Y + halfY, z: centerXZ.z };
+  const geo = new THREE.BoxGeometry(halfXZ.hx * 2, thickness, halfXZ.hz * 2);
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0xdc2626,
+    emissive: 0x7f1d1d,
+    emissiveIntensity: 0.85,
+    roughness: 0.55,
+    metalness: 0.08,
+  });
+  geometries.push(geo);
+  materials.push(mat);
+
+  const entity = spawnMesh(world, ctx, geo, mat, center);
+  addComponent(world, entity, Rotation);
+}
+
 function spawnShootingTarget(
   world: World,
   center: { x: number; y: number; z: number },
@@ -83,6 +121,7 @@ function spawnShootingTarget(
   addComponent(world, entity, RigidBody, { type: 'fixed' });
   addComponent(world, entity, BoxCollider, { ...half, friction: 0.75 });
   addComponent(world, entity, Health, { current: 3, max: 3 });
+  addComponent(world, entity, ShootableTarget);
 }
 
 function triggerMuzzleFlash(): void {
@@ -110,24 +149,61 @@ function createMuzzleLayer(): HTMLDivElement {
   return el;
 }
 
-function createOverlay(): HTMLDivElement {
-  const el = document.createElement('div');
-  el.style.position = 'fixed';
-  el.style.bottom = '24px';
-  el.style.left = '50%';
-  el.style.transform = 'translateX(-50%)';
-  el.style.padding = '10px 20px';
-  el.style.background = 'rgba(15, 23, 42, 0.72)';
-  el.style.border = '1px solid rgba(125, 211, 252, 0.3)';
-  el.style.borderRadius = '999px';
-  el.style.color = '#e2e8f0';
-  el.style.fontFamily = '"Avenir Next", "Segoe UI", sans-serif';
-  el.style.fontSize = '13px';
-  el.style.letterSpacing = '0.06em';
-  el.style.pointerEvents = 'none';
-  el.textContent =
-    'FPS Test — click canvas to look, WASD move, Space jump, left-click shoot (3 hits per target), Escape to title';
-  return el;
+function createArcaneHud(): { root: HTMLDivElement; handles: FpsHudHandles } {
+  const root = document.createElement('div');
+  root.id = 'arcane-hud';
+  root.style.cssText =
+    'position:fixed;inset:0;pointer-events:none;z-index:5;font-family:"Avenir Next","Segoe UI",system-ui,sans-serif;';
+
+  const cross = document.createElement('div');
+  cross.id = 'arcane-crosshair';
+  cross.style.cssText =
+    'position:absolute;left:50%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%);';
+  const chV = document.createElement('div');
+  chV.style.cssText =
+    'position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:rgba(255,255,255,0.9);box-shadow:0 0 1px rgba(0,0,0,0.5);';
+  const chH = document.createElement('div');
+  chH.style.cssText =
+    'position:absolute;top:50%;left:0;right:0;height:2px;margin-top:-1px;background:rgba(255,255,255,0.9);box-shadow:0 0 1px rgba(0,0,0,0.5);';
+  cross.append(chV, chH);
+
+  const killsLabel = document.createElement('div');
+  killsLabel.id = 'arcane-kills';
+  killsLabel.style.cssText =
+    'position:absolute;top:16px;right:20px;color:#e2e8f0;font-size:15px;font-weight:600;';
+  killsLabel.textContent = '0';
+
+  const healthWrap = document.createElement('div');
+  healthWrap.style.cssText = 'position:absolute;left:20px;bottom:52px;width:200px;';
+  const healthBarOuter = document.createElement('div');
+  healthBarOuter.style.cssText =
+    'height:12px;background:rgba(15,23,42,0.8);border-radius:8px;overflow:hidden;border:1px solid rgba(148,163,184,0.4);';
+  const healthFill = document.createElement('div');
+  healthFill.style.cssText =
+    'height:100%;width:100%;background:linear-gradient(90deg,#16a34a,#4ade80);transform-origin:left center;transform:scaleX(1);transition:transform 80ms ease-out;';
+  healthBarOuter.appendChild(healthFill);
+  const healthLabel = document.createElement('div');
+  healthLabel.style.cssText = 'margin-top:8px;color:#cbd5e1;font-size:12px;letter-spacing:0.04em;';
+  healthLabel.textContent = '—';
+  healthWrap.append(healthBarOuter, healthLabel);
+
+  const overlay = document.createElement('div');
+  overlay.id = 'arcane-game-overlay';
+  overlay.style.cssText =
+    'display:none;position:absolute;inset:0;align-items:center;justify-content:center;background:rgba(15,23,42,0.72);color:#f8fafc;font-size:clamp(18px,4vw,26px);font-weight:600;text-align:center;padding:32px;line-height:1.35;';
+
+  const hint = document.createElement('div');
+  hint.style.cssText =
+    'position:absolute;left:50%;bottom:18px;transform:translateX(-50%);max-width:min(560px,92vw);text-align:center;color:rgba(226,232,240,0.78);font-size:11px;line-height:1.45;';
+  hint.textContent =
+    'Click canvas to capture mouse — WASD move, Space jump, shoot targets (3 hits each). Glowing red floor pad in the +X,+Z corner hurts. R respawn when dead. Esc → title.';
+
+  root.append(cross, killsLabel, healthWrap, overlay, hint);
+
+  return {
+    root,
+    handles: { healthFill, healthLabel, killsLabel, overlay },
+  };
 }
 
 export function setup(world: World): void {
@@ -160,6 +236,9 @@ export function setup(world: World): void {
   spawnFixedBlock(world, { x: -2, y: 0.9, z: 5 }, { hx: 0.6, hy: 0.9, hz: 1.2 }, 0xa78bfa);
   spawnFixedBlock(world, { x: 6, y: 0.4, z: -4 }, { hx: 1.2, hy: 0.4, hz: 0.4 }, 0x4ade80);
 
+  // Damage test zone: visible pad on the floor (AABB only in damageZoneSystem — no extra collider)
+  spawnHazardFloorPad(world, { x: 7.75, z: 7.75 }, { hx: 1.35, hz: 1.35 }, 0.06);
+
   // Shootable targets (3 hp each)
   spawnShootingTarget(world, { x: -3, y: 1.4, z: -9.5 }, { hx: 0.35, hy: 0.55, hz: 0.15 }, 0xf43f5e);
   spawnShootingTarget(world, { x: 0, y: 1.4, z: -9.5 }, { hx: 0.35, hy: 0.55, hz: 0.15 }, 0xeab308);
@@ -170,17 +249,25 @@ export function setup(world: World): void {
   spawnShootingTarget(world, { x: 4, y: 1.2, z: 6 }, { hx: 0.35, hy: 0.45, hz: 0.35 }, 0x14b8a6);
 
   const player = createEntity(world);
-  addComponent(world, player, Position, { x: 0, y: 2, z: 0 });
+  addComponent(world, player, Position, { ...PLAYER_SPAWN });
   addComponent(world, player, RigidBody, { type: 'kinematic' });
   addComponent(world, player, BoxCollider, { hx: 0.4, hy: 0.9, hz: 0.4 });
   addComponent(world, player, FPSCamera, { yaw: 0, pitch: 0, height: 1.7 });
   addComponent(world, player, CharacterController, {
-    speed: 5,
-    jumpSpeed: 6,
+    speed: PLAYER_MOVE_SPEED,
+    jumpSpeed: PLAYER_JUMP_SPEED,
     grounded: false,
     _velocityY: 0,
   });
   addComponent(world, player, Controllable);
+  addComponent(world, player, Health, { current: 10, max: 10 });
+
+  const gameStateEntity = createEntity(world);
+  addComponent(world, gameStateEntity, GameState, {
+    kills: 0,
+    playerHp: 10,
+    phase: 'playing',
+  });
 
   ctx.camera.position.set(0, 3.7, 0);
   ctx.camera.rotation.set(0, 0, 0, 'YXZ');
@@ -192,8 +279,9 @@ export function setup(world: World): void {
   };
   window.addEventListener('keydown', escListener);
 
-  overlay = createOverlay();
-  document.body.appendChild(overlay);
+  const hud = createArcaneHud();
+  hudRoot = hud.root;
+  document.body.appendChild(hudRoot);
 
   muzzleLayer = createMuzzleLayer();
   document.body.appendChild(muzzleLayer);
@@ -208,7 +296,30 @@ export function setup(world: World): void {
       onFire: triggerMuzzleFlash,
     }),
   );
+  registerSystem(
+    world,
+    damageZoneSystem({
+      zone: {
+        minX: 6.35,
+        maxX: 9.15,
+        minY: 0,
+        maxY: 4,
+        minZ: 6.35,
+        maxZ: 9.15,
+      },
+      intervalSec: 0.35,
+      amount: 2,
+    }),
+  );
   registerSystem(world, healthSystem(physicsCtx, ctx));
+  registerSystem(
+    world,
+    gameStateSystem(physicsCtx, hud.handles, {
+      spawn: PLAYER_SPAWN,
+      moveSpeed: PLAYER_MOVE_SPEED,
+      jumpSpeed: PLAYER_JUMP_SPEED,
+    }),
+  );
   registerSystem(world, renderSystem(ctx));
 }
 
@@ -225,8 +336,8 @@ export function teardown(world: World): void {
   inputHandle?.dispose();
   inputHandle = undefined;
 
-  overlay?.remove();
-  overlay = undefined;
+  hudRoot?.remove();
+  hudRoot = undefined;
 
   if (muzzleTimeout !== undefined) {
     clearTimeout(muzzleTimeout);

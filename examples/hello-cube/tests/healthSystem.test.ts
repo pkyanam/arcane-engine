@@ -2,6 +2,7 @@ import { addComponent, createEntity, createWorld, getComponent, hasComponent } f
 import { describe, expect, it, beforeAll } from 'vitest';
 import * as THREE from 'three';
 import type { WebGLRenderer } from 'three';
+import { Controllable } from '@arcane-engine/input';
 import { MeshRef, Position } from '@arcane-engine/renderer';
 import type { RendererContext } from '@arcane-engine/renderer';
 import {
@@ -13,7 +14,9 @@ import {
   RigidBody,
 } from '@arcane-engine/physics';
 import { Damage } from '../src/components/damage.js';
+import { GameState } from '../src/components/gameState.js';
 import { Health } from '../src/components/health.js';
+import { ShootableTarget } from '../src/components/shootableTarget.js';
 import { healthSystem } from '../src/healthSystem.js';
 
 beforeAll(async () => {
@@ -87,5 +90,66 @@ describe('healthSystem', () => {
 
     expect(rendererCtx.scene.children.includes(mesh)).toBe(false);
     expect(world.entities.has(e)).toBe(false);
+  });
+
+  it('clamps the controllable player at 0 hp and sets GameState.phase to dead instead of destroying', () => {
+    const world = createWorld();
+    const physCtx = createPhysicsContext();
+    const rendererCtx = minimalRendererContext();
+    const sys = healthSystem(physCtx, rendererCtx);
+
+    const stateEnt = createEntity(world);
+    addComponent(world, stateEnt, GameState, { kills: 0, playerHp: 10, phase: 'playing' });
+
+    const player = createEntity(world);
+    addComponent(world, player, Health, { current: 1, max: 10 });
+    addComponent(world, player, Controllable);
+    addComponent(world, player, Damage, { amount: 1 });
+
+    sys(world, 1 / 60);
+
+    expect(world.entities.has(player)).toBe(true);
+    expect(getComponent(world, player, Health)?.current).toBe(0);
+    expect(getComponent(world, stateEnt, GameState)?.phase).toBe('dead');
+  });
+
+  it('increments GameState.kills when destroying a ShootableTarget', () => {
+    const world = createWorld();
+    const physCtx = createPhysicsContext();
+    const rendererCtx = minimalRendererContext();
+    const sys = healthSystem(physCtx, rendererCtx);
+
+    const stateEnt = createEntity(world);
+    addComponent(world, stateEnt, GameState, { kills: 0, playerHp: 10, phase: 'playing' });
+
+    const target = createEntity(world);
+    addComponent(world, target, Health, { current: 1, max: 1 });
+    addComponent(world, target, ShootableTarget);
+    addComponent(world, target, Damage, { amount: 1 });
+
+    sys(world, 1 / 60);
+
+    expect(world.entities.has(target)).toBe(false);
+    expect(getComponent(world, stateEnt, GameState)?.kills).toBe(1);
+  });
+
+  it('discards Damage on the player while phase is dead', () => {
+    const world = createWorld();
+    const physCtx = createPhysicsContext();
+    const rendererCtx = minimalRendererContext();
+    const sys = healthSystem(physCtx, rendererCtx);
+
+    const stateEnt = createEntity(world);
+    addComponent(world, stateEnt, GameState, { kills: 0, playerHp: 0, phase: 'dead' });
+
+    const player = createEntity(world);
+    addComponent(world, player, Health, { current: 0, max: 10 });
+    addComponent(world, player, Controllable);
+    addComponent(world, player, Damage, { amount: 5 });
+
+    sys(world, 1 / 60);
+
+    expect(getComponent(world, player, Health)?.current).toBe(0);
+    expect(hasComponent(world, player, Damage)).toBe(false);
   });
 });

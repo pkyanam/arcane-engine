@@ -16,6 +16,9 @@ importers:
       '@arcane-engine/input':
         specifier: workspace:*
         version: link:../../packages/input
+      '@arcane-engine/physics':
+        specifier: workspace:*
+        version: link:../../packages/physics
       '@arcane-engine/renderer':
         specifier: workspace:*
         version: link:../../packages/renderer
@@ -93,6 +96,31 @@ importers:
       three:
         specifier: ^0.169.0
         version: 0.169.0
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+      vite:
+        specifier: ^5.4.0
+        version: 5.4.21(@types/node@22.19.15)
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@22.19.15)(jsdom@25.0.1)
+
+  packages/physics:
+    dependencies:
+      '@arcane-engine/core':
+        specifier: workspace:*
+        version: link:../core
+      '@arcane-engine/renderer':
+        specifier: workspace:*
+        version: link:../renderer
+      '@dimforge/rapier3d-compat':
+        specifier: ^0.14.0
+        version: 0.14.0
+    devDependencies:
+      '@vitest/coverage-v8':
+        specifier: ^2.1.0
+        version: 2.1.9(vitest@2.1.9(@types/node@22.19.15)(jsdom@25.0.1))
       typescript:
         specifier: ^5.6.0
         version: 5.9.3
@@ -187,6 +215,9 @@ packages:
   '@csstools/css-tokenizer@3.0.4':
     resolution: {integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==}
     engines: {node: '>=18'}
+
+  '@dimforge/rapier3d-compat@0.14.0':
+    resolution: {integrity: sha512-/uHrUzS+CRQ+NQrrJCEDUkhwHlNsAAexbNXgbN9sHY+GwR+SFFAFrxRr8Llf5/AJZzqiLANdQIfJ63Cw4gJVqw==}
 
   '@esbuild/aix-ppc64@0.21.5':
     resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
@@ -1165,6 +1196,8 @@ snapshots:
       '@csstools/css-tokenizer': 3.0.4
 
   '@csstools/css-tokenizer@3.0.4': {}
+
+  '@dimforge/rapier3d-compat@0.14.0': {}
 
   '@esbuild/aix-ppc64@0.21.5':
     optional: true

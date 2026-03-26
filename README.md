@@ -24,7 +24,7 @@ It is inspired by the feeling of Next.js:
 
 ## Status
 
-Arcane Engine is currently at **Stage 6** of the MVP plan:
+Arcane Engine is currently at **Stage 7** of the MVP plan:
 
 - ECS core is done
 - renderer is done
@@ -32,8 +32,25 @@ Arcane Engine is currently at **Stage 6** of the MVP plan:
 - scene system is done
 - CLI scaffolder is done
 - hello-cube demo and onboarding docs are done
+- optional physics package is done (Rapier)
 
-This repo is now being cleaned up for its first public GitHub version.
+## Physics
+
+An optional `@arcane-engine/physics` package is available for games that need real physics.
+
+It is powered by [Rapier](https://rapier.rs/) and supports:
+
+- fixed bodies (walls, floors, platforms)
+- dynamic bodies (objects that fall and collide)
+- box colliders with configurable restitution and friction
+- automatic gravity simulation
+- automatic transform sync back into ECS `Position` and `Rotation`
+
+Physics is entirely optional.  Games that do not use it do not pay any cost for it.
+
+See [`packages/physics/README.md`](packages/physics/README.md) for the full API and a quick-start example.
+
+The `hello-cube` demo includes a physics scene — press **P** from the title screen to see cubes fall under gravity and collide with a ground plane.
 
 ## Why This Exists
 

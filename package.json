@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test": "pnpm --filter @arcane-engine/core build && pnpm --filter @arcane-engine/renderer build && pnpm -r test",
+    "test": "pnpm --filter @arcane-engine/core build && pnpm --filter @arcane-engine/renderer build && pnpm --filter @arcane-engine/physics build && pnpm -r test",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck"
   }

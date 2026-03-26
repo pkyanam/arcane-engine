@@ -20,6 +20,9 @@ const titleInputSystem: SystemFn = (world: World): void => {
     if (input.keys.has('Enter')) {
       requestSceneChange('gameplay');
     }
+    if (input.keys.has('KeyP')) {
+      requestSceneChange('physics');
+    }
   }
 };
 
@@ -32,8 +35,12 @@ function createOverlay(): HTMLDivElement {
     '<p style="margin:0;max-width:32rem;line-height:1.6;text-transform:none;letter-spacing:0.02em;">' +
     'Press Enter to Start and drop into a live ECS scene with a controllable player cube, floating ambience, and scene-driven transitions.' +
     '</p>' +
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">' +
     '<p style="margin:0;padding:12px 18px;border-radius:999px;background:rgba(15, 23, 42, 0.72);border:1px solid rgba(125, 211, 252, 0.35);">' +
-    'Press Enter to Start</p>' +
+    'Enter — Gameplay</p>' +
+    '<p style="margin:0;padding:12px 18px;border-radius:999px;background:rgba(15, 23, 42, 0.72);border:1px solid rgba(125, 211, 252, 0.35);">' +
+    'P — Physics Demo</p>' +
+    '</div>' +
     '</div>';
   element.style.position = 'fixed';
   element.style.inset = '0';

@@ -111,6 +111,9 @@ importers:
       '@arcane-engine/core':
         specifier: workspace:*
         version: link:../core
+      '@arcane-engine/input':
+        specifier: workspace:*
+        version: link:../input
       '@arcane-engine/renderer':
         specifier: workspace:*
         version: link:../renderer

@@ -23,6 +23,9 @@ const titleInputSystem: SystemFn = (world: World): void => {
     if (input.keys.has('KeyP')) {
       requestSceneChange('physics');
     }
+    if (input.keys.has('KeyF')) {
+      requestSceneChange('fps-test');
+    }
   }
 };
 
@@ -40,6 +43,8 @@ function createOverlay(): HTMLDivElement {
     'Enter — Gameplay</p>' +
     '<p style="margin:0;padding:12px 18px;border-radius:999px;background:rgba(15, 23, 42, 0.72);border:1px solid rgba(125, 211, 252, 0.35);">' +
     'P — Physics Demo</p>' +
+    '<p style="margin:0;padding:12px 18px;border-radius:999px;background:rgba(15, 23, 42, 0.72);border:1px solid rgba(125, 211, 252, 0.35);">' +
+    'F — FPS Test</p>' +
     '</div>' +
     '</div>';
   element.style.position = 'fixed';

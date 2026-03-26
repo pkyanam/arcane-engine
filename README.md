@@ -1,122 +1,93 @@
 # Arcane Engine
 
-Arcane Engine is a small framework for making 3D browser games.
+**Arcane Engine** is a small framework for making **3D games in the browser**. It is meant to feel approachable: you can read the code, copy a pattern, and have something on screen without fighting boilerplate.
 
-If that sentence sounds complicated, here is the simple version:
+We are **building in public** — the repo lives on GitHub, and we share progress openly (say hi on X if you try it). Perfect is not the goal; **clear and learnable** is.
 
-- You make "things" in your game, like a player, a cube, or an enemy.
-- You give those things simple pieces of data, like position, health, or input.
-- You write small rules that update them every frame.
-- Arcane Engine gives you the structure for that, without making you build everything from scratch.
+---
 
-Think of it like this:
+## ELI5: What is this?
 
-- Three.js draws the 3D world.
-- Arcane Engine organizes the game logic.
-- `create-arcane` gives you a starter project so you can begin quickly.
+Imagine you are telling a five-year-old how a tiny video game works:
 
-It is inspired by the feeling of Next.js:
+1. **Things** exist in the world — a player, a wall, a cube.
+2. Each thing only stores **simple facts** — “I am here,” “I can be controlled,” “I fall.”
+3. Every frame, **rules** run: move the player, apply gravity, draw the picture.
 
-- clear folders
-- sensible defaults
-- fast setup
-- easy for humans and AI agents to understand
+Arcane Engine is the **folder structure + glue** for those three ideas. It uses a pattern called **ECS** (Entity–Component–System). You do not need to have heard of ECS before.
 
-## Status
+| Word (grown-up) | Kid version |
+|-------------------|-------------|
+| **Entity** | “A thing.” It is really just an ID number. |
+| **Component** | “A sticker with facts on it” — position, health, “is this the player?” |
+| **System** | “A rule that runs every frame” — move, spin, render, physics. |
+| **Scene** | “One screen” — title, level, game over. |
 
-Arcane Engine is currently at **Stage 7** of the MVP plan:
+**Three.js** paints the 3D picture. **Arcane Engine** keeps the logic organized. **`create-arcane`** scaffolds a new project so you are not staring at a blank repo.
 
-- ECS core is done
-- renderer is done
-- input system is done
-- scene system is done
-- CLI scaffolder is done
-- hello-cube demo and onboarding docs are done
-- optional physics package is done (Rapier)
+---
 
-## Physics
+## Where we are (March 2026)
 
-An optional `@arcane-engine/physics` package is available for games that need real physics.
+The big-picture plan is in [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md): a **small multiplayer-style FPS in the browser** (walk, shoot, simple HUD, then networking). We ship it **stage by stage**.
 
-It is powered by [Rapier](https://rapier.rs/) and supports:
+**Done so far (Stages 1–9 on that roadmap):**
 
-- fixed bodies (walls, floors, platforms)
-- dynamic bodies (objects that fall and collide)
-- box colliders with configurable restitution and friction
-- automatic gravity simulation
-- automatic transform sync back into ECS `Position` and `Rotation`
+- Core ECS, renderer, input, scenes, CLI, and the **hello-cube** demo
+- **Physics** (Rapier): floors, falling boxes, **kinematic** player bodies, **raycast** (for shooting later)
+- **First-person**: mouse look with **pointer lock**, move **relative to where you look**
+- **Character controller**: walk and jump in a room **without falling through the floor or clipping walls**
 
-Physics is entirely optional.  Games that do not use it do not pay any cost for it.
+**Next up:** Stage 10 — **weapons + hitscan** (click to shoot, health, targets).
 
-See [`packages/physics/README.md`](packages/physics/README.md) for the full API and a quick-start example.
+If the PRD’s checklist table ever looks stale, **the code and tests win**.
 
-The `hello-cube` demo includes a physics scene — press **P** from the title screen to see cubes fall under gravity and collide with a ground plane.
+---
 
-## Why This Exists
+## Physics (still “optional,” but powerful)
 
-Making a browser game usually means wiring together a lot of pieces by hand:
+The **`@arcane-engine/physics`** package uses [Rapier](https://rapier.rs/). Think of it as “the world has solid objects and gravity.”
 
-- a renderer
-- a game loop
-- input handling
-- scene switching
-- project structure
+- **Fixed** things do not move (ground, walls).
+- **Dynamic** things fall and bump into each other.
+- **Kinematic** things are moved by your code (typical FPS capsule/box), but still collide with the world.
+- **`raycast`** draws an invisible line for “what did we hit?” — perfect for hitscan guns later.
 
-Arcane Engine tries to make the first version of a game feel much simpler.
+Games that never add the package do not load Rapier. See [`packages/physics/README.md`](packages/physics/README.md) for API details.
 
-Instead of asking:
+---
 
-"Which engine pieces do I glue together first?"
+## Why this exists
 
-it tries to let you ask:
+Most browser-game starts mean wiring **renderer + loop + input + folders** by hand. Arcane Engine tries to skip that ceremony so you can ask sooner: **“What should my game do?”** not **“Which glue file do I write first?”**
 
-"What do I want my game to do?"
+---
 
-## ELI5: How It Works
-
-Arcane Engine uses an ECS pattern.
-
-If you have never seen ECS before, here is the kid-version explanation:
-
-- **Entity**: a thing in the game
-  - player
-  - cube
-  - camera target
-- **Component**: a fact about that thing
-  - where it is
-  - how fast it moves
-  - whether the player controls it
-- **System**: a rule that updates things
-  - move the player
-  - spin a cube
-  - render the scene
-- **Scene**: a game screen
-  - title screen
-  - gameplay
-  - pause menu
-
-So instead of one giant class doing everything, you build a game out of small, simple parts.
-
-## What Is In This Repo
+## What is in this repo
 
 ```text
 arcane-engine/
 |- packages/
 |  |- core/            # ECS, world, queries, systems, game loop, scenes
 |  |- renderer/        # Three.js bridge and render components
-|  |- input/           # keyboard/mouse input and movement helpers
+|  |- input/           # keyboard, mouse, movement, orbit + FPS camera
+|  |- physics/         # Rapier: bodies, colliders, raycast, character controller
 |  `- create-arcane/   # starter project scaffolder
 |- templates/
 |  `- starter/         # default generated project
 |- examples/
-|  `- hello-cube/      # working demo project
+|  `- hello-cube/      # working demo (title, gameplay, physics, FPS room)
 |- README.md
 |- CONTRIBUTING.md
 |- AGENTS.md
-`- CLAUDE.md
+|- CLAUDE.md
+|- ARCANE_ENGINE_PRD_V2.md
+`- package.json
 ```
 
-## Quick Start
+---
+
+## Quick start
 
 From the repo root:
 
@@ -127,72 +98,64 @@ pnpm typecheck
 pnpm build
 ```
 
-To run the demo:
+Run the demo:
 
 ```sh
 pnpm --filter hello-cube dev
 ```
 
-Then open the local URL Vite prints in the terminal.
+Open the URL Vite prints (usually `http://localhost:5173`).
 
-Demo controls:
+**Title screen shortcuts:**
 
-- Press `Enter` on the title screen to start
-- Move with `W`, `A`, `S`, `D` or arrow keys
-- Press `Escape` to go back to the title screen
+| Key | What it does |
+|-----|----------------|
+| **Enter** | Gameplay scene (cube world, WASD) |
+| **P** | Physics playground (cubes + gravity) |
+| **F** | **FPS test** — click the canvas to capture the mouse, then WASD, Space to jump, Escape back to title |
 
-## Create A New Game
+---
 
-Published usage:
+## Create a new game
+
+Published:
 
 ```sh
 npx @arcane-engine/create-arcane my-game
 ```
 
-That will:
+That creates a folder, copies the starter template, fixes the name, installs deps, and can start the dev server.
 
-- create a new project folder
-- copy the starter template
-- replace the placeholder project name
-- install dependencies
-- start the dev server in interactive terminals
-
-Useful flags:
+Flags:
 
 ```sh
 create-arcane my-game --no-install
 create-arcane my-game --no-start
 ```
 
-If you are working inside this monorepo and want to test the local CLI:
+Inside this monorepo, local CLI:
 
 ```sh
 node packages/create-arcane/bin/create-arcane.js my-game --no-install --no-start
 ```
 
-## Folder Conventions
+---
 
-Arcane Engine is intentionally opinionated about where things go.
+## Folder conventions (opinionated on purpose)
 
-- `game.config.ts`
-  - project-level settings like the first scene and renderer options
-- `scenes/<name>.ts`
-  - one file per scene
-  - exports `setup(world)` and optional `teardown(world)`
-- `components/<name>.ts`
-  - one component definition per file
-- `systems/<name>.ts`
-  - one system per file
-- `src/runtime/*`
-  - small runtime helpers used by the starter and example projects
+- `game.config.ts` — first scene, canvas id, renderer options  
+- `scenes/<name>.ts` — `setup` / `teardown` per screen  
+- `components/<name>.ts` — one component type per file  
+- `systems/<name>.ts` — one system per file  
+- `src/runtime/*` — small helpers shared by the example and template  
 
-The goal is that you can look at the file tree and understand the shape of the game quickly.
+The tree should **read like the game**.
 
-## Add An Entity
+---
 
-An entity is just a number. You usually do not care about the number itself. You care about the data attached to it.
+## Add an entity
 
-First define a component:
+Entities are numbers. You attach **components** (plain objects).
 
 ```ts
 import { defineComponent } from '@arcane-engine/core';
@@ -202,8 +165,6 @@ export const Health = defineComponent('Health', () => ({
   max: 100,
 }));
 ```
-
-Then create an entity in a scene:
 
 ```ts
 import { addComponent, createEntity } from '@arcane-engine/core';
@@ -218,13 +179,13 @@ export function setup(world: World): void {
 }
 ```
 
-If you want that entity to show up visually, use `spawnMesh(...)` from `@arcane-engine/renderer`.
+Use `spawnMesh(...)` from `@arcane-engine/renderer` when you need something visible.
 
-## Add A System
+---
 
-A system is a small function that runs every frame.
+## Add a system
 
-Example:
+A **system** is a function that runs every frame.
 
 ```ts
 import { getComponent, query } from '@arcane-engine/core';
@@ -243,7 +204,7 @@ const bounceSystem: SystemFn = (world: World, dt: number): void => {
 export default bounceSystem;
 ```
 
-Register it in a scene:
+Register in a scene:
 
 ```ts
 import { registerSystem } from '@arcane-engine/core';
@@ -252,62 +213,52 @@ import bounceSystem from '../systems/bounceSystem.js';
 registerSystem(world, bounceSystem);
 ```
 
-## Add A Scene
+---
 
-Scenes are just files.
+## Add a scene
 
 ```ts
 import type { World } from '@arcane-engine/core';
 
 export function setup(world: World): void {
-  // create entities
-  // register systems
-  // add any scene-specific DOM
+  // entities + systems + any DOM for this screen
 }
 
 export function teardown(_world: World): void {
-  // remove scene-specific DOM or renderer objects
+  // clean up scene-specific DOM / Three.js objects
 }
 ```
 
-To make it the first scene:
+Set the starting scene in `game.config.ts` (`initialScene`).
 
-```ts
-const gameConfig = {
-  initialScene: 'shop',
-};
-```
+---
 
 ## Packages
 
-- `@arcane-engine/core`
-  - ECS primitives, queries, systems, game loop, and scenes
-- `@arcane-engine/renderer`
-  - renderer setup, render components, `spawnMesh`, and `renderSystem`
-- `@arcane-engine/input`
-  - input state, movement system, and camera follow system
-- `@arcane-engine/create-arcane`
-  - starter project scaffolding
+| Package | You get |
+|---------|---------|
+| `@arcane-engine/core` | World, entities, components, queries, systems, loop, scenes |
+| `@arcane-engine/renderer` | Three.js setup, `spawnMesh`, `renderSystem`, transform components |
+| `@arcane-engine/input` | `InputState`, movement, orbit camera, **FPS camera + pointer lock** |
+| `@arcane-engine/physics` | Rapier world, colliders, **character controller**, **`raycast`** |
+| `@arcane-engine/create-arcane` | `npx` project scaffold |
 
-Public APIs are documented with JSDoc in `packages/*/src`.
+JSDoc lives next to the source in `packages/*/src`.
 
-## What The Demo Proves
+---
 
-The hello-cube demo is meant to show the framework in the simplest useful way:
+## What the hello-cube demo proves
 
-- title scene
-- gameplay scene
-- scene switching
-- player movement
-- floating cubes
-- ground plane
-- basic lighting
+- Multiple **scenes** and clean **switching**  
+- **WASD** gameplay and a **title** screen  
+- **Physics** toys (P)  
+- A **first-person room** (F): floors, walls, jump, pointer lock  
 
-It is not trying to be a full game. It is trying to be a clear example.
+It is not a shipped game — it is a **readable proof** that the pieces work together.
+
+---
 
 ## Development
-
-Main verification commands:
 
 ```sh
 pnpm test
@@ -315,29 +266,28 @@ pnpm typecheck
 pnpm build
 ```
 
-Project rules:
+Project habits:
 
-- TypeScript strict mode everywhere
-- components are plain objects, not classes
-- systems are pure functions
-- every public function should have Vitest coverage
-- avoid feature creep
+- TypeScript **strict** everywhere  
+- Components = **plain objects**, not classes  
+- Systems = **pure** `(world, dt)` functions  
+- Public APIs should have **tests**  
+- Prefer **small steps** over feature piles  
 
-## Build In Public
+---
 
-This repository is being built in public.
+## Build in public
 
-That means the code should be:
+We want this repo to be easy to **read**, **fork**, **teach**, and **extend** — including for AI coding agents. If a design is clever but confusing, it probably does not belong here.
 
-- easy to read
-- easy to explain
-- easy to scaffold
-- easy for contributors and AI agents to extend
+**GitHub:** star, issue, PR — all welcome.  
+**X / social:** share what you build; we’d love to see it.
 
-If something feels clever but confusing, it is probably the wrong tradeoff for this project.
+---
 
-## More Docs
+## More docs
 
-- [CONTRIBUTING.md](./CONTRIBUTING.md) for contributor workflow and repo rules
-- [AGENTS.md](./AGENTS.md) for Codex and other coding agents
-- [CLAUDE.md](./CLAUDE.md) for Claude Code-specific repo context
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — how to contribute  
+- [`AGENTS.md`](./AGENTS.md) — notes for Codex and other agents  
+- [`CLAUDE.md`](./CLAUDE.md) — notes for Claude Code  
+- [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) — roadmap to multiplayer FPS  

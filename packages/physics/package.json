@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@arcane-engine/core": "workspace:*",
+    "@arcane-engine/input": "workspace:*",
     "@arcane-engine/renderer": "workspace:*",
     "@dimforge/rapier3d-compat": "^0.14.0"
   },

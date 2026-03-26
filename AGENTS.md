@@ -24,9 +24,11 @@ Simple mental model:
 - system = a rule that updates things
 - scene = one game screen
 
-**Current stage:** Stage 6 complete (Hello Cube Demo + Documentation).
+**Roadmap:** See [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) for the full **browser multiplayer FPS** plan (Stages 1–12). If that document’s status table disagrees with the repo, **trust the code and tests**.
 
-**What comes next:** public repo cleanup, optional performance validation, and choosing the first post-MVP milestone. There is no formal Stage 7 in the PRD yet.
+**Current stage:** **Stage 9 complete** on the V2 track: physics (including kinematic bodies and `raycast`), FPS camera + pointer lock, **`CharacterController`** / **`characterControllerSystem`**, and the **`fps-test`** scene in `examples/hello-cube`.
+
+**What comes next:** **Stage 10 — Weapons + Hitscan** (PRD §6): mouse button tracking, `weaponSystem`, example-local `Health` / `Damage`, targets in `fps-test` or a follow-on scene.
 
 ---
 
@@ -35,18 +37,20 @@ Simple mental model:
 ```text
 arcane-engine/
 |- packages/
-|  |- core/           # ECS, game loop, world, scenes         - Stages 1 and 4 complete
-|  |- renderer/       # Three.js wrapper                      - Stage 2 complete
-|  |- input/          # Keyboard/mouse ECS bridge             - Stage 3 complete
-|  `- create-arcane/  # npx CLI scaffolder                    - Stage 5 complete
+|  |- core/           # ECS, game loop, world, scenes
+|  |- renderer/       # Three.js wrapper
+|  |- input/          # Keyboard/mouse, movement, orbit + FPS camera
+|  |- physics/        # Rapier: colliders, raycast, character controller
+|  `- create-arcane/  # npx CLI scaffolder
 |- templates/
 |  `- starter/        # Default generated project
 |- examples/
-|  `- hello-cube/     # Polished Stage 6 demo
+|  `- hello-cube/     # title, gameplay, physics, fps-test
 |- README.md
 |- CONTRIBUTING.md
 |- CLAUDE.md
 |- AGENTS.md
+|- ARCANE_ENGINE_PRD_V2.md
 `- package.json
 ```
 
@@ -63,7 +67,8 @@ arcane-engine/
 |---------|----------------|
 | `@arcane-engine/core` | ECS primitives, queries, system registration, game loop, scene lifecycle |
 | `@arcane-engine/renderer` | Three.js scene/camera/renderer setup and mesh rendering helpers |
-| `@arcane-engine/input` | DOM input bridge plus movement and camera-follow systems |
+| `@arcane-engine/input` | DOM input bridge, movement, camera follow, FPS look + pointer lock |
+| `@arcane-engine/physics` | Rapier world, rigid bodies, box colliders, raycast, character controller |
 | `@arcane-engine/create-arcane` | CLI that scaffolds starter projects |
 
 ---
@@ -152,13 +157,26 @@ import {
   createInputManager,
   movementSystem,
   cameraFollowSystem,
+  fpsCameraSystem,
+  fpsMovementSystem,
   InputState,
   Controllable,
+  FPSCamera,
 } from '@arcane-engine/input';
 import type { CameraFollowOptions, InputManagerHandle } from '@arcane-engine/input';
 ```
 
-`createInputManager(world)` creates one ECS entity that stores input state. Systems read that ECS data and should not talk to the DOM directly.
+`createInputManager(world, canvas?)` creates one ECS entity that stores input state. Pass the **canvas** to enable pointer lock on click for FPS scenes. Systems read ECS data and should not talk to the DOM directly.
+
+---
+
+## Physics API
+
+Import from `@arcane-engine/physics`. Call **`await initPhysics()`** once at app startup before `createPhysicsContext`.
+
+Typical FPS stack: `physicsSystem` → `characterControllerSystem` → `fpsCameraSystem` → `renderSystem`.
+
+See [`packages/physics/README.md`](./packages/physics/README.md) for collider shapes, `raycast`, and body types (`fixed`, `dynamic`, `kinematic`).
 
 ---
 
@@ -215,9 +233,7 @@ const scenes: Record<string, Scene> = {
 
 ## Docs Style
 
-This repo is being prepared for public GitHub sharing.
-
-When writing docs or comments:
+This repo is shared **in public** (GitHub and social). When writing docs or comments:
 
 - prefer simple language over jargon
 - explain ECS concepts the first time they appear
@@ -230,14 +246,14 @@ If something is technically correct but hard to explain, prefer the simpler vers
 
 ## Current Baseline
 
-- Stages 1 through 6 are complete
-- `packages/create-arcane` scaffolds starter projects correctly
-- `templates/starter` builds as a generated app
-- `examples/hello-cube` has a title screen, gameplay scene, floating cubes, ground plane, lighting, and scene switching
-- root `README.md` and `CONTRIBUTING.md` exist
-- public package APIs are documented with JSDoc
-- verified commands from repo root: `pnpm test`, `pnpm typecheck`, `pnpm build`
-- verified scaffold flow: local CLI scaffold plus generated-project `pnpm install`, `pnpm typecheck`, and `pnpm build`
+- **Stages 1–9** (PRD V2 FPS track) are implemented and tested
+- Physics package: fixed / dynamic / **kinematic** bodies, **`raycast()`**, **`CharacterController`** + **`characterControllerSystem`**
+- Input package: **`FPSCamera`**, **`fpsCameraSystem`**, **`fpsMovementSystem`**, pointer lock via **`createInputManager(world, canvas)`**
+- **hello-cube**: title, gameplay, physics (**P**), **fps-test** (**F**); app boot awaits **`initPhysics()`**
+- `packages/create-arcane` scaffolds starter projects; `templates/starter` builds
+- root `README.md` and `CONTRIBUTING.md` exist; public APIs have JSDoc
+- verified from repo root: `pnpm test`, `pnpm typecheck`, `pnpm build`
+- verified scaffold: local CLI + generated project `pnpm install`, `pnpm typecheck`, `pnpm build`
 
 ---
 
@@ -264,14 +280,14 @@ If something is technically correct but hard to explain, prefer the simpler vers
 Use Conventional Commits:
 
 ```text
-feat(core): add query bitmask optimization
+feat(physics): expose raycast max distance
 fix(renderer): prevent mesh leak on destroyEntity
 docs(readme): clarify ECS concepts
-test(create-arcane): cover absolute scaffold path
+test(input): cover pointer lock
 chore: update lockfile
 ```
 
-Valid scopes: `core`, `renderer`, `input`, `create-arcane`, `examples`, `docs`
+Valid scopes: `core`, `renderer`, `input`, `physics`, `create-arcane`, `examples`, `docs`
 
 ---
 
@@ -286,15 +302,14 @@ Valid scopes: `core`, `renderer`, `input`, `create-arcane`, `examples`, `docs`
 
 ---
 
-## What Not To Build Yet
+## What Not To Build Yet (Unless Explicitly Asked)
 
-These are post-MVP ideas. Do not implement them unless explicitly asked:
+From **PRD V2** and beyond the current stage:
 
-- physics
-- asset pipeline
-- audio
-- collision
-- UI overlay system
-- networking
-- WebGPU renderer
-- plugin system
+- Stages **11+** before **Stage 10** is done and merged
+- Full **asset pipeline** / GLTF (procedural geometry is the norm for now)
+- **Audio**
+- **Anticheat**, production-grade networking product
+- **Mobile / gamepad** as the primary input story
+- **WebGPU** renderer
+- Open-ended **plugin ecosystem**

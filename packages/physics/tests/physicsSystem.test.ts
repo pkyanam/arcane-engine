@@ -155,6 +155,75 @@ describe('physicsSystem — collision', () => {
   });
 });
 
+describe('physicsSystem — kinematic bodies', () => {
+  it('kinematic body has RapierBodyRef after the first tick', () => {
+    const world = createWorld();
+    const ctx = createPhysicsContext();
+
+    const entity = createEntity(world);
+    addComponent(world, entity, Position, { x: 0, y: 3, z: 0 });
+    addComponent(world, entity, Rotation);
+    addComponent(world, entity, RigidBody, { type: 'kinematic' });
+    addComponent(world, entity, BoxCollider, { hx: 0.5, hy: 0.5, hz: 0.5 });
+
+    const system = physicsSystem(ctx);
+    system(world, 1 / 60);
+
+    expect(hasComponent(world, entity, RapierBodyRef)).toBe(true);
+    const ref = getComponent(world, entity, RapierBodyRef);
+    expect(ref?.handle).toBeGreaterThanOrEqual(0);
+  });
+
+  it('kinematic body ECS position is NOT updated by physicsSystem', () => {
+    const world = createWorld();
+    const ctx = createPhysicsContext();
+
+    const entity = createEntity(world);
+    addComponent(world, entity, Position, { x: 0, y: 5, z: 0 });
+    addComponent(world, entity, Rotation);
+    addComponent(world, entity, RigidBody, { type: 'kinematic' });
+    addComponent(world, entity, BoxCollider, { hx: 0.5, hy: 0.5, hz: 0.5 });
+
+    const system = physicsSystem(ctx);
+    for (let i = 0; i < 60; i++) {
+      system(world, 1 / 60);
+    }
+
+    // Kinematic bodies are not driven by the simulation; position must stay at 5.
+    const pos = getComponent(world, entity, Position)!;
+    expect(pos.y).toBe(5);
+  });
+
+  it('dynamic cube stops at a kinematic floor', () => {
+    const world = createWorld();
+    const ctx = createPhysicsContext();
+
+    // Kinematic floor at y = 0
+    const floor = createEntity(world);
+    addComponent(world, floor, Position, { x: 0, y: 0, z: 0 });
+    addComponent(world, floor, Rotation);
+    addComponent(world, floor, RigidBody, { type: 'kinematic' });
+    addComponent(world, floor, BoxCollider, { hx: 10, hy: 0.5, hz: 10 });
+
+    // Dynamic cube dropped from y = 5
+    const cube = createEntity(world);
+    addComponent(world, cube, Position, { x: 0, y: 5, z: 0 });
+    addComponent(world, cube, Rotation);
+    addComponent(world, cube, RigidBody, { type: 'dynamic' });
+    addComponent(world, cube, BoxCollider, { hx: 0.5, hy: 0.5, hz: 0.5, restitution: 0.0 });
+
+    const system = physicsSystem(ctx);
+    for (let i = 0; i < 180; i++) {
+      system(world, 1 / 60);
+    }
+
+    // Cube rests on the kinematic floor. Floor top ≈ 0.5, cube half ≈ 0.5, so y ≈ 1.
+    const pos = getComponent(world, cube, Position)!;
+    expect(pos.y).toBeGreaterThan(0.3);
+    expect(pos.y).toBeLessThan(2.0);
+  });
+});
+
 describe('physicsSystem — entities without Position', () => {
   it('does not throw for entities missing Position component', () => {
     const world = createWorld();

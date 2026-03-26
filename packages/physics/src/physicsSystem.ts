@@ -89,9 +89,9 @@ export const physicsSystem = (ctx: PhysicsContext): SystemFn =>
 
       // Build rigid body descriptor
       let bodyDesc =
-        rigidBodyComp.type === 'fixed'
-          ? RAPIER.RigidBodyDesc.fixed()
-          : RAPIER.RigidBodyDesc.dynamic();
+        rigidBodyComp.type === 'fixed'     ? RAPIER.RigidBodyDesc.fixed() :
+        rigidBodyComp.type === 'kinematic' ? RAPIER.RigidBodyDesc.kinematicPositionBased() :
+                                             RAPIER.RigidBodyDesc.dynamic();
 
       if (pos) {
         bodyDesc = bodyDesc.setTranslation(pos.x, pos.y, pos.z);
@@ -131,8 +131,8 @@ export const physicsSystem = (ctx: PhysicsContext): SystemFn =>
       const bodyRef = getComponent(world, entity, RapierBodyRef)!;
       const body = ctx.world.getRigidBody(bodyRef.handle);
 
-      // Fixed bodies never move; skip to avoid unnecessary writes.
-      if (!body || body.isFixed()) continue;
+      // Only dynamic bodies are driven by the simulation; skip fixed and kinematic.
+      if (!body || !body.isDynamic()) continue;
 
       const translation = body.translation();
       const pos = getComponent(world, entity, Position)!;

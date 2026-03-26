@@ -19,12 +19,14 @@ Core model:
 
 - entity = a thing in the game
 - component = data about the thing
-- system = logic that updates things
+- system = logic that updates the thing
 - scene = one screen or game state
 
-**Current stage:** Stage 6 complete (Hello Cube Demo + Documentation).
+**Roadmap:** [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) describes the path to a small **multiplayer first-person shooter** in the browser (Stages 1–12). The checklist table in §9 of that doc may lag the repo; treat the codebase and this file as the source of truth for what is already shipped.
 
-**Next step:** public-facing cleanup and then choosing the first post-MVP milestone. The PRD does not define a formal Stage 7 yet.
+**Current stage:** **Stage 9 complete** on the V2 track — through **Character controller + walkable FPS room** (`CharacterController`, `characterControllerSystem`, `examples/hello-cube/scenes/fps-test.ts`). Stages **7** (Rapier physics), **7b** (kinematic bodies + `raycast()`), **8** (`FPSCamera`, pointer lock, `fpsCameraSystem`, `fpsMovementSystem`), and **9** are implemented and tested.
+
+**Next step (per PRD V2 §6):** **Stage 10 — Weapons + Hitscan** (`Health` / `Damage` in the example first, `weaponSystem`, mouse buttons in `InputState`). Do not start Stage 11+ until Stage 10 is specified and agreed.
 
 ---
 
@@ -35,16 +37,18 @@ arcane-engine/
 |- packages/
 |  |- core/           # ECS, queries, systems, game loop, scenes
 |  |- renderer/       # Three.js wrapper and render helpers
-|  |- input/          # DOM input bridge and movement/camera systems
+|  |- input/          # DOM input bridge, movement, orbit + FPS camera systems
+|  |- physics/        # Rapier: bodies, colliders, raycast, character controller
 |  `- create-arcane/  # starter project scaffolder
 |- templates/
 |  `- starter/        # default generated project
 |- examples/
-|  `- hello-cube/     # polished example demo
+|  `- hello-cube/     # title, gameplay, physics, fps-test scenes
 |- README.md
 |- CONTRIBUTING.md
 |- AGENTS.md
 |- CLAUDE.md
+|- ARCANE_ENGINE_PRD_V2.md
 `- package.json
 ```
 
@@ -61,7 +65,8 @@ arcane-engine/
 |---------|----------------|
 | `@arcane-engine/core` | ECS primitives, query engine, system registration, game loop, scene lifecycle |
 | `@arcane-engine/renderer` | Three.js integration, render components, renderer setup, mesh spawning |
-| `@arcane-engine/input` | input components, DOM event bridge, movement system, camera follow system |
+| `@arcane-engine/input` | Input components, DOM bridge, movement, camera follow, FPS look / pointer lock |
+| `@arcane-engine/physics` | Rapier world, rigid bodies (fixed / dynamic / kinematic), box colliders, `raycast`, character controller |
 | `@arcane-engine/create-arcane` | scaffolds a starter project from `templates/starter` |
 
 ---
@@ -140,11 +145,28 @@ Spin
 ### `@arcane-engine/input`
 
 ```ts
-createInputManager(world): InputManagerHandle
+createInputManager(world, canvas?): InputManagerHandle
 movementSystem(speed?): SystemFn
 cameraFollowSystem(ctx, options?): SystemFn
+fpsCameraSystem(ctx, options?): SystemFn
+fpsMovementSystem(speed?): SystemFn
 InputState
 Controllable
+FPSCamera
+```
+
+### `@arcane-engine/physics`
+
+```ts
+initPhysics(): Promise<void>
+createPhysicsContext(options?): PhysicsContext
+physicsSystem(ctx): SystemFn
+characterControllerSystem(ctx): SystemFn
+raycast(ctx, origin, direction, maxDistance): RaycastHit | null
+RigidBody            // type: 'fixed' | 'dynamic' | 'kinematic'
+BoxCollider
+RapierBodyRef
+CharacterController
 ```
 
 ---
@@ -169,7 +191,7 @@ Controllable
 - pure functions only
 - signature `(world: World, dt: number) => void`
 - do not hide important world state in external mutable closures
-- registration order matters
+- registration order matters (e.g. physics step before character controller before FPS camera before render)
 
 ### Naming
 
@@ -191,9 +213,7 @@ Controllable
 
 ## Docs And Public Communication
 
-This repo is being prepared for early public GitHub sharing.
-
-Prefer docs that are:
+The project is **built in public** (GitHub, social). Prefer docs that are:
 
 - simple
 - concrete
@@ -214,7 +234,7 @@ The README should stay understandable to someone who is new to browser game tool
 
 - every public function should have a Vitest test
 - tests live in `packages/<pkg>/tests/` or `examples/<name>/tests/`
-- tests should import from `src/`, not `dist/`
+- tests should import from `src/`, not from `dist/`
 - include performance-oriented tests for hot paths where it matters
 - run repo-wide verification with `pnpm test`, `pnpm typecheck`, and `pnpm build`
 
@@ -222,18 +242,19 @@ The README should stay understandable to someone who is new to browser game tool
 
 ## Current Baseline
 
-- Stages 1 through 6 are complete
-- `packages/create-arcane` is implemented and locally verified
-- `templates/starter` works as a generated app
-- `examples/hello-cube` demonstrates the framework with title/gameplay scenes and visible motion
-- root docs exist and public package APIs have JSDoc
-- repo verification commands pass from the root
+- Stages **1–9** of the **PRD V2** FPS track are implemented: core through character controller + `fps-test` scene
+- `packages/physics`: Rapier WASM, fixed/dynamic/**kinematic** bodies, box colliders, gravity sync for dynamic bodies, **`raycast()`**, **`CharacterController`** + **`characterControllerSystem`**
+- `packages/input`: **`FPSCamera`**, **`fpsCameraSystem`**, **`fpsMovementSystem`**, optional canvas + **pointer lock** in `createInputManager`
+- `examples/hello-cube`: scenes **`title`**, **`gameplay`**, **`physics`** (P), **`fps-test`** (F); `main.ts` awaits **`initPhysics()`**
+- `packages/create-arcane` and `templates/starter` verified locally
+- public package APIs documented with JSDoc
+- repo verification from root: `pnpm test`, `pnpm typecheck`, `pnpm build`
 
 ---
 
 ## Agent Workflow Notes
 
-- Claude Code is best used for architecture, integration, and multi-file cleanup
+- Claude Code is well suited to architecture, integration, and multi-file cleanup across packages
 - Codex is strong on isolated packages, tests, example implementation, and bounded fixes
 - keep this file and `AGENTS.md` aligned
 - when project status changes, update stage references and baseline notes
@@ -253,14 +274,14 @@ The README should stay understandable to someone who is new to browser game tool
 Use Conventional Commits:
 
 ```text
-feat(core): add query bitmask optimization
-fix(create-arcane): resolve local file dependency paths from realpath
-docs(readme): explain ECS in plain language
-test(input): cover camera follow edge case
+feat(physics): add hitscan helper
+fix(input): clear mouse delta when no FPS entity
+docs(readme): explain fps-test scene
+test(examples): cover scene registry
 chore: update lockfile
 ```
 
-Scopes: `core`, `renderer`, `input`, `create-arcane`, `examples`, `docs`
+Scopes: `core`, `renderer`, `input`, `physics`, `create-arcane`, `examples`, `docs`
 
 ---
 
@@ -275,15 +296,16 @@ Scopes: `core`, `renderer`, `input`, `create-arcane`, `examples`, `docs`
 
 ---
 
-## Post-MVP Roadmap
+## What Not To Build Unless Explicitly Asked
 
-Do not build these unless explicitly asked:
+Aligned with **PRD V2 §1.3** and post–Stage-12 ideas:
 
-- physics
-- asset pipeline
+- full asset pipeline / GLTF loading (procedural meshes are fine for now)
 - audio
-- collision
-- UI overlay system
-- networking
-- WebGPU renderer
-- plugin system
+- anticheat / production networking product
+- mobile or gamepad-first input
+- accounts, matchmaking, large lobbies
+- WebGPU renderer swap
+- generic plugin marketplace
+
+Weapons, HUD, and multiplayer are **planned in the PRD** — implement stage-by-stage, not all at once.

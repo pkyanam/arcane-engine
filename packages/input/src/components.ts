@@ -15,3 +15,25 @@ export const InputState = defineComponent<{
  * Tag component for entities that should respond to player input.
  */
 export const Controllable = defineComponent('Controllable', () => ({}));
+
+/**
+ * First-person camera state for an entity.
+ *
+ * Add this alongside {@link Controllable} and {@link Position} to enable FPS
+ * look controls via {@link fpsCameraSystem} and direction-relative movement via
+ * {@link fpsMovementSystem}.
+ *
+ * @example
+ * addComponent(world, player, FPSCamera, { yaw: 0, pitch: 0, height: 1.6 });
+ */
+export const FPSCamera = defineComponent<{
+  /** Horizontal look angle in radians.  Updated by {@link fpsCameraSystem}. */
+  yaw: number;
+  /**
+   * Vertical look angle in radians, clamped to ±85°.
+   * Updated by {@link fpsCameraSystem}.
+   */
+  pitch: number;
+  /** Eye height offset above the entity's {@link Position} in metres. */
+  height: number;
+}>('FPSCamera', () => ({ yaw: 0, pitch: 0, height: 1.6 }));

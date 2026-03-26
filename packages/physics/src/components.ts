@@ -2,16 +2,23 @@ import { defineComponent } from '@arcane-engine/core';
 
 /**
  * Describes whether an entity participates in physics simulation as a fixed
- * (immovable) or dynamic (gravity + forces) body.
+ * (immovable), dynamic (gravity + forces), or kinematic (user-controlled) body.
+ *
+ * - `'fixed'` — never moves; immovable collider.
+ * - `'dynamic'` — driven by gravity and forces; transform synced back to ECS.
+ * - `'kinematic'` — moved by the caller each frame via
+ *   `body.setNextKinematicTranslation()`; not driven by gravity.  The physics
+ *   system does **not** sync kinematic transforms back into ECS.
  *
  * Add alongside {@link BoxCollider} so the physics system can create a Rapier
  * rigid body for the entity.
  *
  * @example
- * addComponent(world, ground, RigidBody, { type: 'fixed' });
- * addComponent(world, cube,   RigidBody, { type: 'dynamic' });
+ * addComponent(world, ground,    RigidBody, { type: 'fixed' });
+ * addComponent(world, cube,      RigidBody, { type: 'dynamic' });
+ * addComponent(world, platform,  RigidBody, { type: 'kinematic' });
  */
-export const RigidBody = defineComponent<{ type: 'fixed' | 'dynamic' }>(
+export const RigidBody = defineComponent<{ type: 'fixed' | 'dynamic' | 'kinematic' }>(
   'RigidBody',
   () => ({ type: 'dynamic' }),
 );
@@ -53,3 +60,40 @@ export const RapierBodyRef = defineComponent<{ handle: number }>(
   'RapierBodyRef',
   () => ({ handle: -1 }),
 );
+
+/**
+ * FPS-style character motor backed by Rapier’s kinematic character controller.
+ *
+ * Add on a **kinematic** {@link RigidBody} with {@link BoxCollider}, {@link Position},
+ * and {@link FPSCamera} from `@arcane-engine/input`. Drive movement with
+ * {@link characterControllerSystem}.
+ *
+ * `grounded` is overwritten each tick. `_velocityY` stores vertical speed between
+ * frames for gravity and jumping — do not assign it manually.
+ *
+ * @example
+ * addComponent(world, player, CharacterController, {
+ *   speed: 5,
+ *   jumpSpeed: 6,
+ *   grounded: false,
+ *   _velocityY: 0,
+ * });
+ */
+export const CharacterController = defineComponent<{
+  /** Horizontal move speed in m/s. */
+  speed: number;
+  /** Upward velocity applied when jumping, in m/s. */
+  jumpSpeed: number;
+  /** Whether the controller detected ground contact last solve. */
+  grounded: boolean;
+  /**
+   * Internal vertical velocity (m/s) used for gravity and jumps.
+   * @internal
+   */
+  _velocityY: number;
+}>('CharacterController', () => ({
+  speed: 5,
+  jumpSpeed: 6,
+  grounded: false,
+  _velocityY: 0,
+}));

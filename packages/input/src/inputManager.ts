@@ -14,8 +14,16 @@ export interface InputManagerHandle {
 
 /**
  * Create a DOM-backed input manager and mirror browser events into ECS state.
+ *
+ * If `canvas` is provided, clicking the canvas will request pointer lock so
+ * that subsequent `mouse.dx/dy` values come from `MouseEvent.movementX/Y`
+ * regardless of cursor position.  Press Escape to release pointer lock
+ * (handled automatically by the browser).
+ *
+ * @param world   The ECS world.
+ * @param canvas  Optional canvas element to attach pointer-lock behaviour to.
  */
-export function createInputManager(world: World): InputManagerHandle {
+export function createInputManager(world: World, canvas?: HTMLCanvasElement): InputManagerHandle {
   const entity = createEntity(world);
   addComponent(world, entity, InputState);
 
@@ -37,9 +45,16 @@ export function createInputManager(world: World): InputManagerHandle {
     state.mouse.dy += event.movementY;
   }
 
+  function onCanvasClick(): void {
+    canvas!.requestPointerLock();
+  }
+
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
   window.addEventListener('mousemove', onMouseMove);
+  if (canvas) {
+    canvas.addEventListener('click', onCanvasClick);
+  }
 
   return {
     entity,
@@ -47,6 +62,9 @@ export function createInputManager(world: World): InputManagerHandle {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('mousemove', onMouseMove);
+      if (canvas) {
+        canvas.removeEventListener('click', onCanvasClick);
+      }
     },
   };
 }

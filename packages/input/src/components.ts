@@ -6,9 +6,15 @@ import { defineComponent } from '@arcane-engine/core';
 export const InputState = defineComponent<{
   keys: Set<string>;
   mouse: { x: number; y: number; dx: number; dy: number };
+  /**
+   * Mouse buttons currently held (`mousedown` active). DOM button indices:
+   * `0` = left, `1` = middle, `2` = right.
+   */
+  mouseButtons: Set<number>;
 }>('InputState', () => ({
   keys: new Set(),
   mouse: { x: 0, y: 0, dx: 0, dy: 0 },
+  mouseButtons: new Set(),
 }));
 
 /**

@@ -45,6 +45,14 @@ export function createInputManager(world: World, canvas?: HTMLCanvasElement): In
     state.mouse.dy += event.movementY;
   }
 
+  function onMouseDown(event: MouseEvent): void {
+    getComponent(world, entity, InputState)?.mouseButtons.add(event.button);
+  }
+
+  function onMouseUp(event: MouseEvent): void {
+    getComponent(world, entity, InputState)?.mouseButtons.delete(event.button);
+  }
+
   function onCanvasClick(): void {
     canvas!.requestPointerLock();
   }
@@ -52,6 +60,8 @@ export function createInputManager(world: World, canvas?: HTMLCanvasElement): In
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
   window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('mousedown', onMouseDown);
+  window.addEventListener('mouseup', onMouseUp);
   if (canvas) {
     canvas.addEventListener('click', onCanvasClick);
   }
@@ -62,6 +72,8 @@ export function createInputManager(world: World, canvas?: HTMLCanvasElement): In
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mouseup', onMouseUp);
       if (canvas) {
         canvas.removeEventListener('click', onCanvasClick);
       }

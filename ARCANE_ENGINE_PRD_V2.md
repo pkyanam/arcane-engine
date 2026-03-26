@@ -9,7 +9,7 @@ Version 2.0 • March 2026
 
 This document extends the original Arcane Engine PRD (v0.1) beyond the Stage 6 MVP.
 
-Stages 1–7 are complete. Version 2 defines the remaining stages to reach a functional multiplayer first-person shooter running in the browser.
+**Stages 1–10** of the V2 FPS track are **complete** in the repo (through weapons + hitscan in `fps-test`). Stages **11–12** remain to reach a functional multiplayer first-person shooter in the browser.
 
 ### 1.1 V1 Recap (Stages 1–7, all complete)
 
@@ -52,7 +52,7 @@ A functional multiplayer FPS in the browser:
 
 | Package | Purpose |
 |---------|---------|
-| `packages/physics` | Rapier physics — done in Stage 7, extended in Stage 7b |
+| `packages/physics` | Rapier physics — Stage 7 base + Stage 7b (kinematic, `raycast`) + Stage 9 (`CharacterController`) |
 | `packages/server` | Minimal WebSocket server for multiplayer — added in Stage 12 |
 
 ### 2.2 New dependency graph
@@ -70,20 +70,21 @@ hello-cube example
 
 ### 2.3 Per-frame data flow (V2 target)
 
-1. Input system → reads keyboard + pointer lock mouse delta into `InputState`
-2. Character controller system → applies WASD + gravity via Rapier kinematic body
-3. FPS camera system → positions camera at player eye level, applies yaw/pitch
-4. Physics system → steps Rapier, syncs dynamic body transforms to ECS
-5. Weapon system → on fire input, casts ray, writes `Damage` to hit entity
-6. Health system → processes `Damage`, destroys entity at 0 hp, updates `GameState`
-7. Network sync system → sends local position to server, receives + applies remote positions
-8. Render system → syncs ECS transforms to Three.js, submits draw call
+1. Input system → reads keyboard + pointer lock mouse delta and mouse buttons into `InputState`
+2. Hit flash restore (Stage 10) → restores materials for one-frame hit feedback; runs before weapon/health in `fps-test`
+3. Physics system → steps Rapier, creates bodies, syncs dynamic body transforms to ECS
+4. Character controller system → applies WASD + gravity via Rapier kinematic body
+5. FPS camera system → positions camera at player eye level, applies yaw/pitch
+6. Weapon system → on fire input, casts ray, writes `Damage` to hit entity
+7. Health system → processes `Damage`, destroys entity at 0 hp; updates `GameState` once Stage 11 exists
+8. Network sync system (Stage 12) → sends local position to server, receives + applies remote positions
+9. Render system → syncs ECS transforms to Three.js, submits draw call
 
 ---
 
 ## 3. Stage 7b — Physics Extension
 
-**Status:** Planned. Prerequisite for Stages 8–10.
+**Status:** ✅ Complete.
 
 ### Goal
 
@@ -137,7 +138,7 @@ interface RaycastHit {
 
 ## 4. Stage 8 — First-Person Camera + Pointer Lock
 
-**Status:** Planned. Depends on Stage 7b.
+**Status:** ✅ Complete. (Depends on Stage 7b — satisfied.)
 
 ### Goal
 
@@ -184,7 +185,9 @@ Spacebar applies an upward velocity to the character body. Handled in the charac
 
 ## 5. Stage 9 — Character Controller + Simple Map
 
-**Status:** Planned. Depends on Stages 7b and 8.
+**Status:** ✅ Complete. (Depends on Stages 7b and 8 — satisfied.)
+
+**Implementation notes (as shipped):** `CharacterController` includes an internal `_velocityY` field for gravity integration across ticks. Direction-relative movement and jump are handled in `characterControllerSystem` (not `fpsMovementSystem`). The map uses the specified room layout with half-extent colliders; scene entry from title is **F** (`fps-test`).
 
 ### Goal
 
@@ -234,7 +237,9 @@ A new `scenes/fps-test.ts` in `examples/hello-cube`:
 
 ## 6. Stage 10 — Weapons + Hitscan
 
-**Status:** Planned. Depends on Stages 7b and 9.
+**Status:** ✅ Complete. Depends on Stages 7b and 9 (both satisfied).
+
+**Implementation notes (as shipped):** `InputState` includes **`mouseButtons: Set<number>`** (`0` = left), updated in **`createInputManager`** via `mousedown` / `mouseup`. Combat lives in **`examples/hello-cube`**: **`Health`**, **`Damage`**, **`HitFlash`** components; **`weaponSystem`**, **`healthSystem`**, **`hitFlashRestoreSystem`**; **`findEntityByColliderHandle`** maps **`raycast`** collider handles to ECS entities via **`RapierBodyRef`**. **`fps-test`** registers systems in order: hit flash restore → physics → character → FPS camera → weapon → health → render; includes shootable targets, muzzle flash (~80 ms DOM overlay), and one-frame white **MeshStandardMaterial** hit flash.
 
 ### Goal
 
@@ -299,7 +304,7 @@ Extend `InputState` to track `mouseButtons: Set<number>` (0 = left). Wire `mouse
 
 ## 7. Stage 11 — HUD + Game State
 
-**Status:** Planned. Depends on Stage 10.
+**Status:** Planned — **next**. Depends on Stage 10 (complete).
 
 ### Goal
 
@@ -350,7 +355,7 @@ Extend `weaponSystem` so that if the ray hits the player entity (multiplayer Sta
 
 ## 8. Stage 12 — Multiplayer
 
-**Status:** Planned. Depends on Stages 8 and 10.
+**Status:** Planned. Depends on Stages 8, 10, and (for a polished loop) **Stage 11** HUD / game state.
 
 ### Goal
 
@@ -451,32 +456,30 @@ The multiplayer scene (`scenes/multiplayer.ts`) creates the `WebSocket`, waits f
 | 5 | CLI Scaffolder | ✅ done | `npx create-arcane` |
 | 6 | Hello Cube Demo | ✅ done | Polished demo, JSDoc, docs |
 | 7 | Physics (base) | ✅ done | Rapier bodies, box colliders, gravity |
-| 7b | Physics Extension | 🔲 next | Kinematic body, raycast API |
-| 8 | FPS Camera + Pointer Lock | 🔲 | FPS look, direction-relative move |
-| 9 | Character Controller + Map | 🔲 | No-clip movement, level geometry |
-| 10 | Weapons + Hitscan | 🔲 | Shoot, Health, Damage |
-| 11 | HUD + Game State | 🔲 | Crosshair, score, respawn |
+| 7b | Physics Extension | ✅ done | Kinematic body, raycast API |
+| 8 | FPS Camera + Pointer Lock | ✅ done | FPS look, direction-relative move (`fpsMovementSystem`), pointer lock |
+| 9 | Character Controller + Map | ✅ done | Kinematic CC, `fps-test` scene, walls/floor/jump |
+| 10 | Weapons + Hitscan | ✅ done | Hitscan, example `Health` / `Damage`, `mouseButtons`, targets |
+| 11 | HUD + Game State | 🔲 **next** | Crosshair, score, respawn |
 | 12 | Multiplayer | 🔲 | WebSocket, ghost players, shoot sync |
 
 ---
 
 ## 10. Agent Workflow Notes
 
-Stage 7b, 8, 9, 10 are suitable for a single Claude Code session each — they are bounded and build linearly on each other.
+Stages **7b through 10** are complete. **Stage 11** (HUD + `GameState`) is the next bounded session-sized chunk; **Stage 12** (multiplayer) follows.
 
-Stage 11 (HUD) can be parallelized with Stage 9 once Stage 10's `Health`/`Damage` component shapes are finalized.
-
-Stage 12 (server) can be started in a Codex sandbox in parallel with Stage 11, since the server package has no browser dependencies.
+Stage 12 (server) can be started in a Codex sandbox in parallel with Stage 11, since the server package has no browser dependencies — but the client multiplayer scene will benefit from Stage 11 overlays and kill tracking.
 
 Codex is well-suited for:
-- Stage 7b raycast implementation (bounded, has clear interface)
 - Stage 11 HUD DOM code (isolated, clear spec)
 - Stage 12 server (small, self-contained Node.js file)
 
-Claude Code is better for:
-- Stage 8 (pointer lock integration touches input package internals)
-- Stage 9 (Rapier character controller API is nuanced)
-- Stage 10 (multi-package wiring: physics raycast + ECS event components)
+Claude Code is well-suited for:
+- Stage 11 (ECS `GameState`, wiring kills / player HP into DOM, respawn + win flow in `fps-test` or a thin wrapper scene)
+- Stage 12 client (ghost entities, `networkSyncSystem`, scene registration)
+
+**Agent handoff (Stage 11):** [`CURSOR_STAGE11_PROMPT.md`](./CURSOR_STAGE11_PROMPT.md) (companion to the completed [`CURSOR_STAGE10_PROMPT.md`](./CURSOR_STAGE10_PROMPT.md)).
 
 ---
 
@@ -487,4 +490,4 @@ V2 is complete when:
 - `pnpm test`, `pnpm typecheck`, and `pnpm build` pass from the repo root
 - A player can open `http://localhost:5173`, press M, connect to a local WebSocket server, walk around a room in first person, and shoot another player in a second tab
 - All new public APIs have JSDoc and Vitest coverage
-- `CLAUDE.md` stage references are updated to reflect Stage 12 complete
+- `README.md`, `AGENTS.md`, and `CLAUDE.md` stage references are updated to reflect V2 complete (Stage 12)

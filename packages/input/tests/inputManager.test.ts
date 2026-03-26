@@ -38,6 +38,7 @@ describe('createInputManager', () => {
     expect(input).toEqual({
       keys: new Set(),
       mouse: { x: 0, y: 0, dx: 0, dy: 0 },
+      mouseButtons: new Set(),
     });
 
     handle.dispose();
@@ -98,6 +99,21 @@ describe('createInputManager', () => {
 
     expect(input.keys.size).toBe(0);
     expect(input.mouse).toEqual({ x: 0, y: 0, dx: 0, dy: 0 });
+    expect(input.mouseButtons.size).toBe(0);
+  });
+
+  it('tracks mousedown / mouseup in mouseButtons (0 = left)', () => {
+    const world = createWorld();
+    const handle = createInputManager(world);
+    const input = getComponent(world, handle.entity, InputState)!;
+
+    window.dispatchEvent(new MouseEvent('mousedown', { button: 0 }));
+    expect(input.mouseButtons.has(0)).toBe(true);
+
+    window.dispatchEvent(new MouseEvent('mouseup', { button: 0 }));
+    expect(input.mouseButtons.has(0)).toBe(false);
+
+    handle.dispose();
   });
 });
 

@@ -6,6 +6,7 @@ describe('InputState', () => {
     expect(InputState.default()).toEqual({
       keys: new Set(),
       mouse: { x: 0, y: 0, dx: 0, dy: 0 },
+      mouseButtons: new Set(),
     });
   });
 
@@ -16,12 +17,15 @@ describe('InputState', () => {
     expect(first).not.toBe(second);
     expect(first.keys).not.toBe(second.keys);
     expect(first.mouse).not.toBe(second.mouse);
+    expect(first.mouseButtons).not.toBe(second.mouseButtons);
 
     first.keys.add('KeyW');
     first.mouse.dx = 12;
+    first.mouseButtons.add(0);
 
     expect(second.keys.size).toBe(0);
     expect(second.mouse.dx).toBe(0);
+    expect(second.mouseButtons.size).toBe(0);
   });
 });
 

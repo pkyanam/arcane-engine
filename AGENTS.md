@@ -26,9 +26,9 @@ Simple mental model:
 
 **Roadmap:** See [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) for the full **browser multiplayer FPS** plan (Stages 1–12). If that document’s status table disagrees with the repo, **trust the code and tests**.
 
-**Current stage:** **Stage 9 complete** on the V2 track: physics (including kinematic bodies and `raycast`), FPS camera + pointer lock, **`CharacterController`** / **`characterControllerSystem`**, and the **`fps-test`** scene in `examples/hello-cube`.
+**Current stage:** **Stage 10 complete** on the V2 track: **`InputState.mouseButtons`**, example-local **`Health`** / **`Damage`** / **`HitFlash`**, **`weaponSystem`**, **`healthSystem`**, **`hitFlashRestoreSystem`**, collider lookup for **`raycast`** hits, and shootable targets + feedback in **`fps-test`** (`examples/hello-cube`).
 
-**What comes next:** **Stage 10 — Weapons + Hitscan** (PRD §6): mouse button tracking, `weaponSystem`, example-local `Health` / `Damage`, targets in `fps-test` or a follow-on scene.
+**What comes next:** **Stage 11 — HUD + Game State** (PRD §7): DOM HUD (`#arcane-hud`), crosshair, health bar, kill counter, **`GameState`**, death/win overlays, **R** respawn. **Stage 12** is multiplayer (WebSocket); see PRD §8.
 
 ---
 
@@ -174,7 +174,7 @@ import type { CameraFollowOptions, InputManagerHandle } from '@arcane-engine/inp
 
 Import from `@arcane-engine/physics`. Call **`await initPhysics()`** once at app startup before `createPhysicsContext`.
 
-Typical FPS stack: `physicsSystem` → `characterControllerSystem` → `fpsCameraSystem` → `renderSystem`.
+Typical **`fps-test`** stack: `hitFlashRestoreSystem` → `physicsSystem` → `characterControllerSystem` → `fpsCameraSystem` → `weaponSystem` → `healthSystem` → `renderSystem`.
 
 See [`packages/physics/README.md`](./packages/physics/README.md) for collider shapes, `raycast`, and body types (`fixed`, `dynamic`, `kinematic`).
 
@@ -246,10 +246,10 @@ If something is technically correct but hard to explain, prefer the simpler vers
 
 ## Current Baseline
 
-- **Stages 1–9** (PRD V2 FPS track) are implemented and tested
+- **Stages 1–10** (PRD V2 FPS track) are implemented and tested
 - Physics package: fixed / dynamic / **kinematic** bodies, **`raycast()`**, **`CharacterController`** + **`characterControllerSystem`**
-- Input package: **`FPSCamera`**, **`fpsCameraSystem`**, **`fpsMovementSystem`**, pointer lock via **`createInputManager(world, canvas)`**
-- **hello-cube**: title, gameplay, physics (**P**), **fps-test** (**F**); app boot awaits **`initPhysics()`**
+- Input package: **`FPSCamera`**, **`fpsCameraSystem`**, **`fpsMovementSystem`**, **`InputState.mouseButtons`**, pointer lock via **`createInputManager(world, canvas)`**
+- **hello-cube**: title, gameplay, physics (**P**), **fps-test** (**F**) with hitscan combat; app boot awaits **`initPhysics()`**; root **`pnpm test`** builds **input** (and core/renderer/physics) before tests
 - `packages/create-arcane` scaffolds starter projects; `templates/starter` builds
 - root `README.md` and `CONTRIBUTING.md` exist; public APIs have JSDoc
 - verified from repo root: `pnpm test`, `pnpm typecheck`, `pnpm build`
@@ -306,7 +306,7 @@ Valid scopes: `core`, `renderer`, `input`, `physics`, `create-arcane`, `examples
 
 From **PRD V2** and beyond the current stage:
 
-- Stages **11+** before **Stage 10** is done and merged
+- **Stage 12** (multiplayer) before **Stage 11** (HUD) unless the team explicitly defers HUD
 - Full **asset pipeline** / GLTF (procedural geometry is the norm for now)
 - **Audio**
 - **Anticheat**, production-grade networking product

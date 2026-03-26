@@ -23,8 +23,12 @@ import {
 } from '@arcane-engine/input';
 import { MeshRef, Position, renderSystem, Rotation, spawnMesh } from '@arcane-engine/renderer';
 import * as THREE from 'three';
+import { Health } from '../src/components/health.js';
 import { getGameContext } from '../src/runtime/gameContext.js';
 import { requestSceneChange } from '../src/runtime/sceneTransitions.js';
+import { healthSystem } from '../src/healthSystem.js';
+import { hitFlashRestoreSystem } from '../src/hitFlashRestoreSystem.js';
+import { weaponSystem } from '../src/weaponSystem.js';
 
 let physicsCtx: PhysicsContext | undefined;
 let inputHandle: ReturnType<typeof createInputManager> | undefined;
@@ -32,6 +36,8 @@ let sceneObjects: THREE.Object3D[] = [];
 let geometries: THREE.BufferGeometry[] = [];
 let materials: THREE.Material[] = [];
 let overlay: HTMLDivElement | undefined;
+let muzzleLayer: HTMLDivElement | undefined;
+let muzzleTimeout: ReturnType<typeof setTimeout> | undefined;
 let escListener: ((e: KeyboardEvent) => void) | undefined;
 
 function spawnFixedBlock(
@@ -56,6 +62,54 @@ function spawnFixedBlock(
   addComponent(world, entity, BoxCollider, { ...half, friction: 0.75 });
 }
 
+function spawnShootingTarget(
+  world: World,
+  center: { x: number; y: number; z: number },
+  half: { hx: number; hy: number; hz: number },
+  color: number,
+): void {
+  const { ctx } = getGameContext();
+  const geo = new THREE.BoxGeometry(half.hx * 2, half.hy * 2, half.hz * 2);
+  const mat = new THREE.MeshStandardMaterial({
+    color,
+    roughness: 0.55,
+    metalness: 0.12,
+  });
+  geometries.push(geo);
+  materials.push(mat);
+
+  const entity = spawnMesh(world, ctx, geo, mat, center);
+  addComponent(world, entity, Rotation);
+  addComponent(world, entity, RigidBody, { type: 'fixed' });
+  addComponent(world, entity, BoxCollider, { ...half, friction: 0.75 });
+  addComponent(world, entity, Health, { current: 3, max: 3 });
+}
+
+function triggerMuzzleFlash(): void {
+  if (!muzzleLayer) return;
+  if (muzzleTimeout !== undefined) {
+    clearTimeout(muzzleTimeout);
+    muzzleTimeout = undefined;
+  }
+  muzzleLayer.style.opacity = '0.28';
+  muzzleTimeout = setTimeout(() => {
+    muzzleLayer!.style.opacity = '0';
+    muzzleTimeout = undefined;
+  }, 80);
+}
+
+function createMuzzleLayer(): HTMLDivElement {
+  const el = document.createElement('div');
+  el.style.position = 'fixed';
+  el.style.inset = '0';
+  el.style.pointerEvents = 'none';
+  el.style.background = '#ffffff';
+  el.style.opacity = '0';
+  el.style.transition = 'opacity 45ms ease-out';
+  el.style.zIndex = '6';
+  return el;
+}
+
 function createOverlay(): HTMLDivElement {
   const el = document.createElement('div');
   el.style.position = 'fixed';
@@ -71,7 +125,8 @@ function createOverlay(): HTMLDivElement {
   el.style.fontSize = '13px';
   el.style.letterSpacing = '0.06em';
   el.style.pointerEvents = 'none';
-  el.textContent = 'FPS Test — click canvas to look, WASD move, Space jump, Escape to title';
+  el.textContent =
+    'FPS Test — click canvas to look, WASD move, Space jump, left-click shoot (3 hits per target), Escape to title';
   return el;
 }
 
@@ -105,6 +160,15 @@ export function setup(world: World): void {
   spawnFixedBlock(world, { x: -2, y: 0.9, z: 5 }, { hx: 0.6, hy: 0.9, hz: 1.2 }, 0xa78bfa);
   spawnFixedBlock(world, { x: 6, y: 0.4, z: -4 }, { hx: 1.2, hy: 0.4, hz: 0.4 }, 0x4ade80);
 
+  // Shootable targets (3 hp each)
+  spawnShootingTarget(world, { x: -3, y: 1.4, z: -9.5 }, { hx: 0.35, hy: 0.55, hz: 0.15 }, 0xf43f5e);
+  spawnShootingTarget(world, { x: 0, y: 1.4, z: -9.5 }, { hx: 0.35, hy: 0.55, hz: 0.15 }, 0xeab308);
+  spawnShootingTarget(world, { x: 3, y: 1.4, z: -9.5 }, { hx: 0.35, hy: 0.55, hz: 0.15 }, 0x22c55e);
+  spawnShootingTarget(world, { x: 9.5, y: 1.4, z: -2 }, { hx: 0.15, hy: 0.55, hz: 0.35 }, 0x3b82f6);
+  spawnShootingTarget(world, { x: 9.5, y: 1.4, z: 2 }, { hx: 0.15, hy: 0.55, hz: 0.35 }, 0xa855f7);
+  spawnShootingTarget(world, { x: -5, y: 1.5, z: 5 }, { hx: 0.4, hy: 0.6, hz: 0.4 }, 0xf97316);
+  spawnShootingTarget(world, { x: 4, y: 1.2, z: 6 }, { hx: 0.35, hy: 0.45, hz: 0.35 }, 0x14b8a6);
+
   const player = createEntity(world);
   addComponent(world, player, Position, { x: 0, y: 2, z: 0 });
   addComponent(world, player, RigidBody, { type: 'kinematic' });
@@ -131,9 +195,20 @@ export function setup(world: World): void {
   overlay = createOverlay();
   document.body.appendChild(overlay);
 
+  muzzleLayer = createMuzzleLayer();
+  document.body.appendChild(muzzleLayer);
+
+  registerSystem(world, hitFlashRestoreSystem());
   registerSystem(world, physicsSystem(physicsCtx));
   registerSystem(world, characterControllerSystem(physicsCtx));
   registerSystem(world, fpsCameraSystem(ctx));
+  registerSystem(
+    world,
+    weaponSystem(physicsCtx, {
+      onFire: triggerMuzzleFlash,
+    }),
+  );
+  registerSystem(world, healthSystem(physicsCtx, ctx));
   registerSystem(world, renderSystem(ctx));
 }
 
@@ -152,6 +227,13 @@ export function teardown(world: World): void {
 
   overlay?.remove();
   overlay = undefined;
+
+  if (muzzleTimeout !== undefined) {
+    clearTimeout(muzzleTimeout);
+    muzzleTimeout = undefined;
+  }
+  muzzleLayer?.remove();
+  muzzleLayer = undefined;
 
   for (const entity of query(world, [MeshRef])) {
     const meshRef = getComponent(world, entity, MeshRef);

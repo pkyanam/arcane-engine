@@ -24,9 +24,9 @@ Core model:
 
 **Roadmap:** [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) describes the path to a small **multiplayer first-person shooter** in the browser (Stages 1–12). The checklist table in §9 of that doc may lag the repo; treat the codebase and this file as the source of truth for what is already shipped.
 
-**Current stage:** **Stage 9 complete** on the V2 track — through **Character controller + walkable FPS room** (`CharacterController`, `characterControllerSystem`, `examples/hello-cube/scenes/fps-test.ts`). Stages **7** (Rapier physics), **7b** (kinematic bodies + `raycast()`), **8** (`FPSCamera`, pointer lock, `fpsCameraSystem`, `fpsMovementSystem`), and **9** are implemented and tested.
+**Current stage:** **Stage 10 complete** on the V2 track — through **Weapons + Hitscan** (`InputState.mouseButtons`, example-local `Health` / `Damage` / `HitFlash`, `weaponSystem`, `healthSystem`, `hitFlashRestoreSystem`, shootable targets in `examples/hello-cube/scenes/fps-test.ts`). Stages **7**–**9** remain as documented in the PRD; **10** adds hitscan combat and collider-to-entity resolution in the example.
 
-**Next step (per PRD V2 §6):** **Stage 10 — Weapons + Hitscan** (`Health` / `Damage` in the example first, `weaponSystem`, mouse buttons in `InputState`). Do not start Stage 11+ until Stage 10 is specified and agreed.
+**Next step (per PRD V2 §7):** **Stage 11 — HUD + Game State** (`GameState`, DOM HUD, crosshair, kill counter, death/win overlays, respawn). Do not skip to Stage 12 multiplayer until Stage 11 is specified and agreed (or the team explicitly defers HUD).
 
 ---
 
@@ -150,7 +150,7 @@ movementSystem(speed?): SystemFn
 cameraFollowSystem(ctx, options?): SystemFn
 fpsCameraSystem(ctx, options?): SystemFn
 fpsMovementSystem(speed?): SystemFn
-InputState
+InputState   // keys, mouse dx/dy, mouseButtons (Set; 0 = left)
 Controllable
 FPSCamera
 ```
@@ -191,7 +191,7 @@ CharacterController
 - pure functions only
 - signature `(world: World, dt: number) => void`
 - do not hide important world state in external mutable closures
-- registration order matters (e.g. physics step before character controller before FPS camera before render)
+- registration order matters (e.g. in `fps-test`: hit flash restore → physics → character controller → FPS camera → weapon → health → render)
 
 ### Naming
 
@@ -242,10 +242,10 @@ The README should stay understandable to someone who is new to browser game tool
 
 ## Current Baseline
 
-- Stages **1–9** of the **PRD V2** FPS track are implemented: core through character controller + `fps-test` scene
+- Stages **1–10** of the **PRD V2** FPS track are implemented: core through **weapons + hitscan** in the example
 - `packages/physics`: Rapier WASM, fixed/dynamic/**kinematic** bodies, box colliders, gravity sync for dynamic bodies, **`raycast()`**, **`CharacterController`** + **`characterControllerSystem`**
-- `packages/input`: **`FPSCamera`**, **`fpsCameraSystem`**, **`fpsMovementSystem`**, optional canvas + **pointer lock** in `createInputManager`
-- `examples/hello-cube`: scenes **`title`**, **`gameplay`**, **`physics`** (P), **`fps-test`** (F); `main.ts` awaits **`initPhysics()`**
+- `packages/input`: **`FPSCamera`**, **`fpsCameraSystem`**, **`fpsMovementSystem`**, **`InputState.mouseButtons`**, optional canvas + **pointer lock** in `createInputManager`
+- `examples/hello-cube`: scenes **`title`**, **`gameplay`**, **`physics`** (P), **`fps-test`** (F) with shootable targets, **`weaponSystem`** / **`healthSystem`** / **`hitFlashRestoreSystem`**; `main.ts` awaits **`initPhysics()`**; root **`pnpm test`** builds **core → renderer → input → physics** before workspace tests
 - `packages/create-arcane` and `templates/starter` verified locally
 - public package APIs documented with JSDoc
 - repo verification from root: `pnpm test`, `pnpm typecheck`, `pnpm build`
@@ -308,4 +308,4 @@ Aligned with **PRD V2 §1.3** and post–Stage-12 ideas:
 - WebGPU renderer swap
 - generic plugin marketplace
 
-Weapons, HUD, and multiplayer are **planned in the PRD** — implement stage-by-stage, not all at once.
+Follow the PRD order: **Stage 11** (HUD) before **Stage 12** (multiplayer) unless the team explicitly defers HUD.

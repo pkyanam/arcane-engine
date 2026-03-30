@@ -7,14 +7,9 @@ import { Position } from '@arcane-engine/renderer';
 import { Health } from './components/health.js';
 import { GameState } from './components/gameState.js';
 import { ShootableTarget } from './components/shootableTarget.js';
+import type { FpsHudHandles } from './fpsHud.js';
 
-/** DOM nodes updated by {@link gameStateSystem} (create under `#arcane-hud`). */
-export interface FpsHudHandles {
-  healthFill: HTMLElement;
-  healthLabel: HTMLElement;
-  killsLabel: HTMLElement;
-  overlay: HTMLElement;
-}
+export type { FpsHudHandles };
 
 export interface GameStateSystemOptions {
   spawn: { x: number; y: number; z: number };

@@ -24,9 +24,7 @@ Core model:
 
 **Roadmap:** [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) describes the path to a small **multiplayer first-person shooter** in the browser (Stages 1–12). The checklist table in §9 of that doc may lag the repo; treat the codebase and this file as the source of truth for what is already shipped.
 
-**Current stage:** **Stage 11 complete** on the V2 track — through **HUD + Game State** in `examples/hello-cube`: `#arcane-hud` (crosshair, health bar, kills), example-local **`GameState`** / **`ShootableTarget`**, **`gameStateSystem`**, **`damageZoneSystem`**, player **`Health`**, death / win overlays, **R** respawn, **`healthSystem`** kill counting and player death clamp. Prior stages **7**–**10** remain as in the PRD (physics through hitscan).
-
-**Next step (per PRD V2 §8):** **Stage 12 — Multiplayer** (`packages/server`, WebSocket, `networkSyncSystem`, ghost players). Start from **[`PROMPT.md`](./PROMPT.md)**. HUD and `GameState` from Stage 11 are the client foundation for overlays and scoring.
+**Current stage:** **PRD V2.0 complete** (Stages 1–12) — **`packages/server`** relay, **`networkSyncSystem`**, **`multiplayer`** scene (**M**), shared **`fpsArenaSetup`** / **`fpsHud`**, **`VITE_WS_URL`**, **`mobileControls`** on touch devices. Post-V2 work is discretionary; see **[`README.md`](./README.md)** (deploy), **[`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md)** §10, **[`CHANGELOG.md`](./CHANGELOG.md)**.
 
 ---
 
@@ -39,17 +37,18 @@ arcane-engine/
 |  |- renderer/       # Three.js wrapper and render helpers
 |  |- input/          # DOM input bridge, movement, orbit + FPS camera systems
 |  |- physics/        # Rapier: bodies, colliders, raycast, character controller
+|  |- server/         # Node WebSocket relay (Stage 12)
 |  `- create-arcane/  # starter project scaffolder
 |- templates/
 |  `- starter/        # default generated project
 |- examples/
-|  `- hello-cube/     # title, gameplay, physics, fps-test scenes
+|  `- hello-cube/     # title, gameplay, physics, fps-test, multiplayer scenes
 |- README.md
 |- CONTRIBUTING.md
 |- AGENTS.md
 |- CLAUDE.md
 |- ARCANE_ENGINE_PRD_V2.md
-|- PROMPT.md         # next milestone handoff (Stage 12)
+|- CHANGELOG.md
 `- package.json
 ```
 
@@ -69,6 +68,7 @@ arcane-engine/
 | `@arcane-engine/input` | Input components, DOM bridge, movement, camera follow, FPS look / pointer lock |
 | `@arcane-engine/physics` | Rapier world, rigid bodies (fixed / dynamic / kinematic), box colliders, `raycast`, character controller |
 | `@arcane-engine/create-arcane` | scaffolds a starter project from `templates/starter` |
+| `@arcane-engine/server` | Node **`ws`** relay: `welcome` / `move` / `shoot` / `leave` fan-out (no game logic) |
 
 ---
 
@@ -170,6 +170,12 @@ RapierBodyRef
 CharacterController
 ```
 
+### `@arcane-engine/server`
+
+```ts
+startRelayServer(options?): { httpServer; wss; port; close(): Promise<void> }
+```
+
 ---
 
 ## Coding Conventions
@@ -192,7 +198,7 @@ CharacterController
 - pure functions only
 - signature `(world: World, dt: number) => void`
 - do not hide important world state in external mutable closures
-- registration order matters (e.g. in `fps-test`: hit flash restore → physics → character controller → FPS camera → weapon → damage zone → health → game state → render)
+- registration order matters (e.g. in `fps-test`: hit flash restore → physics → character controller → FPS camera → weapon → damage zone → health → game state → render; in **`multiplayer`**, insert **`networkSyncSystem`** after **`healthSystem`** and before **`gameStateSystem`**)
 
 ### Naming
 
@@ -243,10 +249,10 @@ The README should stay understandable to someone who is new to browser game tool
 
 ## Current Baseline
 
-- Stages **1–11** of the **PRD V2** FPS track are implemented: core through **HUD + game state** in the example (`GameState`, DOM HUD, damage zone, respawn, win)
+- Stages **1–12** of the **PRD V2** FPS track are implemented, including **`packages/server`** and **`multiplayer`** (ghost sync + relayed shoot)
 - `packages/physics`: Rapier WASM, fixed/dynamic/**kinematic** bodies, box colliders, gravity sync for dynamic bodies, **`raycast()`**, **`CharacterController`** + **`characterControllerSystem`**
 - `packages/input`: **`FPSCamera`**, **`fpsCameraSystem`**, **`fpsMovementSystem`**, **`InputState.mouseButtons`**, optional canvas + **pointer lock** in `createInputManager`
-- `examples/hello-cube`: scenes **`title`**, **`gameplay`**, **`physics`** (P), **`fps-test`** (F) with HUD DOM, **`gameStateSystem`**, **`damageZoneSystem`**, **`weaponSystem`** / **`healthSystem`** / **`hitFlashRestoreSystem`**; `main.ts` awaits **`initPhysics()`**; root **`pnpm test`** builds **core → renderer → input → physics** before workspace tests
+- `examples/hello-cube`: scenes **`title`**, **`gameplay`**, **`physics`** (P), **`fps-test`** (F), **`multiplayer`** (M); **`mobileControls`** touch overlay when `pointer: coarse` or `maxTouchPoints`; `main.ts` awaits **`initPhysics()`**; root **`pnpm test`** builds **core → renderer → input → physics → server** before workspace tests
 - `packages/create-arcane` and `templates/starter` verified locally
 - public package APIs documented with JSDoc
 - repo verification from root: `pnpm test`, `pnpm typecheck`, `pnpm build`
@@ -282,7 +288,7 @@ test(examples): cover scene registry
 chore: update lockfile
 ```
 
-Scopes: `core`, `renderer`, `input`, `physics`, `create-arcane`, `examples`, `docs`
+Scopes: `core`, `renderer`, `input`, `physics`, `server`, `create-arcane`, `examples`, `docs`
 
 ---
 
@@ -299,14 +305,14 @@ Scopes: `core`, `renderer`, `input`, `physics`, `create-arcane`, `examples`, `do
 
 ## What Not To Build Unless Explicitly Asked
 
-Aligned with **PRD V2 §1.3** and post–Stage-12 ideas:
+Aligned with **PRD V2 §1.3** and post–V2 ideas:
 
 - full asset pipeline / GLTF loading (procedural meshes are fine for now)
 - audio
 - anticheat / production networking product
-- mobile or gamepad-first input
+- mobile- or gamepad-first product scope (demo touch overlay in hello-cube is not a full mobile pipeline)
 - accounts, matchmaking, large lobbies
 - WebGPU renderer swap
 - generic plugin marketplace
 
-**Stage 11** (HUD) is complete; **Stage 12** (multiplayer) is next unless deferred.
+**V2.0** (through multiplayer relay + client sync) is shipped; treat **PRD** §10 for discretionary follow-ups.

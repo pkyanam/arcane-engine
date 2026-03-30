@@ -11,6 +11,7 @@ describe('gameContext', () => {
     const context = {
       ctx: { renderer: {} } as RendererContext,
       config: { initialScene: 'title' },
+      getCurrentSceneName: (): string | undefined => 'title',
     };
 
     setGameContext(context);

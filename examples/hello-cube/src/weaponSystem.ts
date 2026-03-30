@@ -18,8 +18,13 @@ export interface WeaponSystemOptions {
   maxRange?: number;
   /** Damage applied per shot. */
   damagePerShot?: number;
-  /** Fires when the player shoots (for muzzle flash, etc.). */
+  /** Called on each shot attempt (before raycast), e.g. muzzle flash. */
   onFire?: () => void;
+  /** Broadcast hitscan line to other clients (multiplayer). */
+  onShootRelay?: (payload: {
+    origin: { x: number; y: number; z: number };
+    direction: { x: number; y: number; z: number };
+  }) => void;
 }
 
 /**
@@ -33,6 +38,7 @@ export const weaponSystem = (
   const maxRange = options?.maxRange ?? 100;
   const damagePerShot = options?.damagePerShot ?? 1;
   const onFire = options?.onFire;
+  const onShootRelay = options?.onShootRelay;
 
   let prevMouseDown = false;
 
@@ -63,10 +69,12 @@ export const weaponSystem = (
     scratchEuler.set(-cam.pitch, cam.yaw, 0, 'YXZ');
     scratchDir.set(0, 0, -1).applyEuler(scratchEuler);
 
+    const direction = { x: scratchDir.x, y: scratchDir.y, z: scratchDir.z };
+    onShootRelay?.({ origin, direction });
+    onFire?.();
+
     const hit = raycast(physCtx, origin, scratchDir, maxRange);
     if (!hit) return;
-
-    onFire?.();
 
     const target = findEntityByColliderHandle(world, physCtx, hit.colliderHandle);
     if (target === undefined) return;

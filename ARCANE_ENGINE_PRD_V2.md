@@ -1,7 +1,7 @@
 # ARCANE ENGINE
 ## Product Requirements Document — Version 2
 ### Target: Multiplayer First-Person Shooter
-Version 2.0 • March 2026
+Version 2.0 • March 2026 • **V2 FPS track complete (repo)**
 
 ---
 
@@ -9,7 +9,7 @@ Version 2.0 • March 2026
 
 This document extends the original Arcane Engine PRD (v0.1) beyond the Stage 6 MVP.
 
-**Stages 1–11** of the V2 FPS track are **complete** in the repo (through HUD + `GameState` in `fps-test`). **Stage 12** remains to reach a functional multiplayer first-person shooter in the browser.
+**Stages 1–12** of the V2 FPS track are **complete** in the repo (through WebSocket multiplayer in `hello-cube` **multiplayer** and `packages/server`).
 
 ### 1.1 V1 Recap (Stages 1–7, all complete)
 
@@ -41,7 +41,7 @@ A functional multiplayer FPS in the browser:
 - Audio
 - Weapon variety (one hitscan weapon is enough)
 - Anticheat (server trust is fine for a prototype)
-- Mobile or gamepad input
+- Mobile- or gamepad-first product scope (the **hello-cube** demo includes an optional touch overlay for navigation; that is not a committed mobile SKU)
 - Persistent accounts, matchmaking, lobbies beyond 4 players
 
 ---
@@ -355,7 +355,7 @@ Extend `weaponSystem` so that if the ray hits the player entity (multiplayer Sta
 
 ## 8. Stage 12 — Multiplayer
 
-**Status:** **Next.** Stages 8–11 are complete in the repo (including HUD / `GameState` in `fps-test`).
+**Status:** ✅ Complete. Stages 8–11 remain as above; relay + client sync + **M** scene shipped in-repo.
 
 ### Goal
 
@@ -385,7 +385,7 @@ packages/server/
 - On disconnect: broadcast `{ type: 'leave', playerId }` to remaining clients
 - No game logic on the server — pure relay
 
-**Run with:** `node dist/server.js` or `tsx src/server.ts`
+**Run with:** `pnpm --filter @arcane-engine/server start` (after `build`) — entry `dist/run.js`
 
 ### 8.2 Client
 
@@ -435,6 +435,13 @@ The multiplayer scene (`scenes/multiplayer.ts`) creates the `WebSocket`, waits f
 - Registers: characterControllerSystem, fpsCameraSystem, weaponSystem, healthSystem, networkSyncSystem, renderSystem
 - Accessible from title screen: **M key**
 
+### 8.4 Deployment (free-tier friendly)
+
+- **Static client:** the Vite build can be hosted on **Vercel**, Netlify, GitHub Pages, or the same machine as the server.
+- **WebSocket relay:** must run as a **long-lived Node process** (not Vercel serverless). Recommended for $0 public access: **Raspberry Pi** (or home PC) + **Cloudflare Tunnel** (`cloudflared`) so browsers use **`wss://`** on a real hostname.
+- **Configuration:** the client must read the WebSocket URL from **build- or runtime config** (e.g. `VITE_WS_URL`) so production can point at the tunnel while dev uses `localhost`.
+- **Docs:** when Stage 12 ships, [`README.md`](./README.md) should document at least the **split** layout (static on Vercel + relay on Pi/tunnel) and the **all-on-Pi** option.
+
 ### Acceptance criteria
 
 - Two browser tabs (or two machines on the same network) connect to the server
@@ -461,32 +468,26 @@ The multiplayer scene (`scenes/multiplayer.ts`) creates the `WebSocket`, waits f
 | 9 | Character Controller + Map | ✅ done | Kinematic CC, `fps-test` scene, walls/floor/jump |
 | 10 | Weapons + Hitscan | ✅ done | Hitscan, example `Health` / `Damage`, `mouseButtons`, targets |
 | 11 | HUD + Game State | ✅ done | `#arcane-hud`, `GameState`, kills, death/win, R respawn, damage zone |
-| 12 | Multiplayer | 🔲 **next** | WebSocket, ghost players, shoot sync |
+| 12 | Multiplayer | ✅ done | WebSocket relay (`packages/server`), ghost players, shoot sync, **M** scene |
 
 ---
 
-## 10. Agent Workflow Notes
+## 10. Post-V2 / Agent Notes
 
-Stages **7b through 11** are complete. **Stage 12** (multiplayer) is the next bounded session-sized chunk.
+**The V2 FPS track (Stages 1–12) is complete** in this repository. There is no active “next stage” prompt file; use **[`README.md`](./README.md)** (hosting, `VITE_WS_URL`, quick start), **[`packages/server/README.md`](./packages/server/README.md)** (relay protocol), **[`CONTRIBUTING.md`](./CONTRIBUTING.md)**, and **[`AGENTS.md`](./AGENTS.md)** for day-to-day work.
 
-Stage 12 (server) can be started in a Codex sandbox in parallel with other work, since the server package has no browser dependencies.
-
-Codex is well-suited for:
-- Stage 12 server (small, self-contained Node.js file)
-
-Claude Code is well-suited for:
-- Stage 12 client (ghost entities, `networkSyncSystem`, scene registration)
-
-**Handoff for the next session:** [`PROMPT.md`](./PROMPT.md) (Stage 12).  
-**Archived Stage 11 prompt:** [`CURSOR_STAGE11_PROMPT.md`](./CURSOR_STAGE11_PROMPT.md).
+Discretionary follow-ups (not a committed roadmap): production-harden the relay (auth, rate limits, observability), richer netcode, or items listed as out of scope in **§1.3**.
 
 ---
 
 ## 11. Definition of Done (V2)
 
-V2 is complete when:
+**Status: ✅ Met — V2.0 shipped** (repo verification + docs aligned as of March 2026).
+
+V2 was complete when:
 
 - `pnpm test`, `pnpm typecheck`, and `pnpm build` pass from the repo root
-- A player can open `http://localhost:5173`, press M, connect to a local WebSocket server, walk around a room in first person, and shoot another player in a second tab
+- A player can open `http://localhost:5173`, press **M**, connect to a local WebSocket relay, walk around in first person, and shoot another player in a second tab (relay: `pnpm --filter @arcane-engine/server start`)
 - All new public APIs have JSDoc and Vitest coverage
-- `README.md`, `AGENTS.md`, and `CLAUDE.md` stage references are updated to reflect V2 complete (Stage 12)
+- `README.md`, `AGENTS.md`, and `CLAUDE.md` reflect **V2 / Stage 12 shipped**
+- `README.md` documents **free-tier deploy**: static client (e.g. Vercel) + relay on a **long-lived host** (e.g. Raspberry Pi + Cloudflare Tunnel), with **`VITE_WS_URL`** (or equivalent) for the WebSocket endpoint

@@ -4,7 +4,7 @@
 
 We are **building in public** — the repo lives on GitHub, and we share progress openly (say hi on X if you try it). Perfect is not the goal; **clear and learnable** is.
 
-**Status (March 2026):** V2 roadmap **Stages 1–11 done** — `hello-cube` **fps-test** (**F**) is a small playable FPS loop (HUD, health, kills, win/lose, respawn). **Stage 12** = WebSocket multiplayer ([`PROMPT.md`](./PROMPT.md)). Full table: [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md).
+**Status (March 2026):** **V2.0 shipped** — PRD Stages **1–12** complete (`hello-cube`: **F** fps-test, **M** multiplayer, touch overlay on phones). Roadmap table: [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md). **Release `v0.2.0`:** see [`CHANGELOG.md`](./CHANGELOG.md). *#BuildInPublic*
 
 ---
 
@@ -33,17 +33,38 @@ Arcane Engine is the **folder structure + glue** for those three ideas. It uses 
 
 The big-picture plan is in [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md): a **small multiplayer-style FPS in the browser** (walk, shoot, simple HUD, then networking). We ship it **stage by stage**.
 
-**Done so far (Stages 1–11 on that roadmap):**
+**Done so far (Stages 1–12 on that roadmap):**
 
 - Core ECS, renderer, input, scenes, CLI, and the **hello-cube** demo
 - **Physics** (Rapier): floors, falling boxes, **kinematic** player bodies, **raycast** (hitscan)
 - **First-person**: mouse look with **pointer lock**, move **relative to where you look**
 - **Character controller**: walk and jump in a room **without falling through the floor or clipping walls**
 - **Weapons + hitscan** and **HUD + game state** in **fps-test** (**F**): crosshair, health bar, kills, death/win overlays, **R** respawn, optional floor damage tile
-
-**Next up:** Stage 12 — **multiplayer** (WebSocket server, synced ghost players).
+- **Multiplayer** (**M**): `packages/server` relay (≤4 players), `networkSyncSystem`, colored **ghost** boxes for remote peers, **shoot** relay so each client raycasts remote shots against its own player body
 
 If the PRD’s checklist table ever looks stale, **the code and tests win**.
+
+---
+
+## Hosting (free / low cost)
+
+**Static client:** the Vite build (`pnpm --filter hello-cube build`) can go on **Vercel** or any static host.
+
+**Multiplayer relay:** the WebSocket server is a **long-lived Node** process — it does **not** run on Vercel’s serverless model. Intended setups:
+
+- **Split:** static game on Vercel + **`@arcane-engine/server`** on a **Raspberry Pi** at home, reached via **Cloudflare Tunnel** (`cloudflared`) so the browser uses **`wss://`** on a public hostname.
+- **Combined:** serve `dist/` and the relay from the same Pi behind one tunnel (or use LAN-only for testing).
+
+**Client URL:** set **`VITE_WS_URL`** at build time (e.g. `wss://relay.example.com`) so production points at your tunnel. If unset, local dev uses **`ws://localhost:8765`**; on **`https:`** pages the default becomes **`wss://localhost:8765`** (override with `VITE_WS_URL`).
+
+**Local try (two terminals):**
+
+```sh
+pnpm --filter @arcane-engine/server build && pnpm --filter @arcane-engine/server start
+pnpm --filter hello-cube dev
+```
+
+Then open two browser tabs, press **M** on the title screen in each, and connect to the same relay.
 
 ---
 
@@ -75,17 +96,18 @@ arcane-engine/
 |  |- renderer/        # Three.js bridge and render components
 |  |- input/           # keyboard, mouse, movement, orbit + FPS camera
 |  |- physics/        # Rapier: bodies, colliders, raycast, character controller
+|  |- server/          # WebSocket relay (Stage 12 multiplayer)
 |  `- create-arcane/   # starter project scaffolder
 |- templates/
 |  `- starter/         # default generated project
 |- examples/
-|  `- hello-cube/      # working demo (title, gameplay, physics, FPS room)
+|  `- hello-cube/      # demo: title, gameplay, physics, FPS, multiplayer, mobile UI
 |- README.md
 |- CONTRIBUTING.md
 |- AGENTS.md
 |- CLAUDE.md
 |- ARCANE_ENGINE_PRD_V2.md
-|- PROMPT.md         # handoff for the next milestone (Stage 12)
+|- CHANGELOG.md
 `- package.json
 ```
 
@@ -117,6 +139,11 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **Enter** | Gameplay scene (cube world, WASD) |
 | **P** | Physics playground (cubes + gravity) |
 | **F** | **FPS test** — click canvas for pointer lock; WASD, Space, shoot targets; HUD; **R** respawn if dead; Esc → title |
+| **M** | **Multiplayer** — same arena as **F**; start relay first; ghost players; Esc → title |
+
+**Phone / touch (hello-cube):** On coarse pointers or touch screens, an overlay appears: **title** uses four scene buttons; **in-game** uses a **move stick** (maps to WASD), **Title** (top-right) to return to the menu, and on **FPS** / **Multiplayer** a **drag-to-look** strip plus **Jump**, **Fire**, and **Respawn** (R). Keyboard still works when connected.
+
+**Shipping a GitHub release (#BuildInPublic):** Update [`CHANGELOG.md`](./CHANGELOG.md) and root `package.json` `version`, then tag (e.g. `v0.2.0`) and create a GitHub Release from that tag. Details: [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ---
 

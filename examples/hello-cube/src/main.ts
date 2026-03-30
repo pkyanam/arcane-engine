@@ -6,6 +6,7 @@ import { applyGameConfig, loadInitialScene } from './runtime/gameConfig.js';
 import { setGameContext } from './runtime/gameContext.js';
 import { discoverScenes } from './runtime/sceneRegistry.js';
 import { configureSceneTransitions, flushSceneChange } from './runtime/sceneTransitions.js';
+import { installMobileControls, syncMobileControlsBeforeTick } from './mobileControls.js';
 
 void (async () => {
   await initPhysics();
@@ -14,10 +15,15 @@ void (async () => {
   const ctx = createRenderer();
 
   applyGameConfig(ctx, gameConfig);
-  setGameContext({ ctx, config: gameConfig });
 
   const scenes = discoverScenes();
   const sceneManager = createSceneManager(world, scenes);
+
+  setGameContext({
+    ctx,
+    config: gameConfig,
+    getCurrentSceneName: () => sceneManager.getCurrentSceneName(),
+  });
 
   configureSceneTransitions((name) => {
     sceneManager.loadScene(name);
@@ -25,8 +31,11 @@ void (async () => {
 
   loadInitialScene(sceneManager, gameConfig);
 
+  installMobileControls(world);
+
   createGameLoop({
     onTick: (dt) => {
+      syncMobileControlsBeforeTick(world);
       runSystems(world, dt);
       flushSceneChange();
     },

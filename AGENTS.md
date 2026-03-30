@@ -26,9 +26,7 @@ Simple mental model:
 
 **Roadmap:** See [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) for the full **browser multiplayer FPS** plan (Stages 1–12). If that document’s status table disagrees with the repo, **trust the code and tests**.
 
-**Current stage:** **Stage 11 complete** on the V2 track: **`fps-test`** includes **`#arcane-hud`** (crosshair, health bar, kill counter), example-local **`GameState`**, **`ShootableTarget`**, **`gameStateSystem`**, **`damageZoneSystem`**, player **`Health`**, death/win overlays, **R** respawn, and **`healthSystem`** integration for kills + player death (see `examples/hello-cube`).
-
-**What comes next:** **Stage 12 — Multiplayer** (PRD §8): `packages/server`, WebSocket relay, **`networkSyncSystem`**, ghost **`RemotePlayer`** meshes, **M** key scene. Handoff: **[`PROMPT.md`](./PROMPT.md)**.
+**Current stage:** **PRD V2.0 complete** (Stages 1–12): **`packages/server`**, **`multiplayer`** (**M**), **`networkSyncSystem`**, **`mobileControls`** for touch. Hosting: **README** (`VITE_WS_URL`), **PRD** §8.4 / §10, **CHANGELOG** for releases.
 
 ---
 
@@ -41,17 +39,18 @@ arcane-engine/
 |  |- renderer/       # Three.js wrapper
 |  |- input/          # Keyboard/mouse, movement, orbit + FPS camera
 |  |- physics/        # Rapier: colliders, raycast, character controller
+|  |- server/          # WebSocket relay (multiplayer)
 |  `- create-arcane/  # npx CLI scaffolder
 |- templates/
 |  `- starter/        # Default generated project
 |- examples/
-|  `- hello-cube/     # title, gameplay, physics, fps-test
+|  `- hello-cube/     # title, gameplay, physics, fps-test, multiplayer
 |- README.md
 |- CONTRIBUTING.md
 |- CLAUDE.md
 |- AGENTS.md
 |- ARCANE_ENGINE_PRD_V2.md
-|- PROMPT.md
+|- CHANGELOG.md
 `- package.json
 ```
 
@@ -71,6 +70,7 @@ arcane-engine/
 | `@arcane-engine/input` | DOM input bridge, movement, camera follow, FPS look + pointer lock |
 | `@arcane-engine/physics` | Rapier world, rigid bodies, box colliders, raycast, character controller |
 | `@arcane-engine/create-arcane` | CLI that scaffolds starter projects |
+| `@arcane-engine/server` | Node **`ws`** relay for multiplayer (no simulation) |
 
 ---
 
@@ -175,7 +175,7 @@ import type { CameraFollowOptions, InputManagerHandle } from '@arcane-engine/inp
 
 Import from `@arcane-engine/physics`. Call **`await initPhysics()`** once at app startup before `createPhysicsContext`.
 
-Typical **`fps-test`** stack: `hitFlashRestoreSystem` → `physicsSystem` → `characterControllerSystem` → `fpsCameraSystem` → `weaponSystem` → `damageZoneSystem` → `healthSystem` → `gameStateSystem` → `renderSystem`.
+Typical **`fps-test`** stack: `hitFlashRestoreSystem` → `physicsSystem` → `characterControllerSystem` → `fpsCameraSystem` → `weaponSystem` → `damageZoneSystem` → `healthSystem` → `gameStateSystem` → `renderSystem`. **`multiplayer`** inserts **`networkSyncSystem`** after **`healthSystem`** (before **`gameStateSystem`**).
 
 See [`packages/physics/README.md`](./packages/physics/README.md) for collider shapes, `raycast`, and body types (`fixed`, `dynamic`, `kinematic`).
 
@@ -247,10 +247,10 @@ If something is technically correct but hard to explain, prefer the simpler vers
 
 ## Current Baseline
 
-- **Stages 1–11** (PRD V2 FPS track) are implemented and tested
+- **Stages 1–12** (PRD V2 FPS track) are implemented and tested
 - Physics package: fixed / dynamic / **kinematic** bodies, **`raycast()`**, **`CharacterController`** + **`characterControllerSystem`**
 - Input package: **`FPSCamera`**, **`fpsCameraSystem`**, **`fpsMovementSystem`**, **`InputState.mouseButtons`**, pointer lock via **`createInputManager(world, canvas)`**
-- **hello-cube**: title, gameplay, physics (**P**), **fps-test** (**F**) with hitscan combat, DOM HUD, **`GameState`**, and damage-zone player HP; app boot awaits **`initPhysics()`**; root **`pnpm test`** builds **input** (and core/renderer/physics) before tests
+- **hello-cube**: title, gameplay, physics (**P**), **fps-test** (**F**), **multiplayer** (**M**); **`@arcane-engine/server`** relay; touch devices get **`mobileControls`** overlay (see README); app boot awaits **`initPhysics()`**; root **`pnpm test`** builds **core → renderer → input → physics → server** before workspace tests
 - `packages/create-arcane` scaffolds starter projects; `templates/starter` builds
 - root `README.md` and `CONTRIBUTING.md` exist; public APIs have JSDoc
 - verified from repo root: `pnpm test`, `pnpm typecheck`, `pnpm build`
@@ -288,7 +288,7 @@ test(input): cover pointer lock
 chore: update lockfile
 ```
 
-Valid scopes: `core`, `renderer`, `input`, `physics`, `create-arcane`, `examples`, `docs`
+Valid scopes: `core`, `renderer`, `input`, `physics`, `server`, `create-arcane`, `examples`, `docs`
 
 ---
 
@@ -307,10 +307,10 @@ Valid scopes: `core`, `renderer`, `input`, `physics`, `create-arcane`, `examples
 
 From **PRD V2** and beyond the current stage:
 
-- **Stage 12** (multiplayer) is next; Stage 11 (HUD) is complete unless you fork an older baseline
+- **V2.0** is shipped; treat **PRD V2 §1.3** as the default scope ceiling unless asked to go further
 - Full **asset pipeline** / GLTF (procedural geometry is the norm for now)
 - **Audio**
 - **Anticheat**, production-grade networking product
-- **Mobile / gamepad** as the primary input story
+- **Mobile / gamepad** as the primary product input story (demo touch UI is example-only)
 - **WebGPU** renderer
 - Open-ended **plugin ecosystem**

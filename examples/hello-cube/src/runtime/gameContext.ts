@@ -4,6 +4,8 @@ import type { GameConfig } from './gameConfig.js';
 export interface GameContext {
   ctx: RendererContext;
   config: GameConfig;
+  /** Active scene name from the scene manager (for mobile UI overlays). */
+  getCurrentSceneName: () => string | undefined;
 }
 
 let gameContext: GameContext | undefined;

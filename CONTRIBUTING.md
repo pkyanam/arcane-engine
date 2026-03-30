@@ -5,8 +5,8 @@ Arcane Engine is intentionally small. Contributions should make the framework ea
 ## Start Here
 
 - Read `AGENTS.md` before changing code or adding files.
-- For the active milestone, read **`PROMPT.md`** (handoff + scope).
-- Keep work aligned with the current stage and PRD scope.
+- For roadmap and “done” criteria, read **`ARCANE_ENGINE_PRD_V2.md`** (V2 track is complete; §10 is post-V2 guidance).
+- Keep work aligned with **CONTRIBUTING** / **AGENTS** and avoid scope in **PRD §1.3** unless explicitly requested.
 - Prefer small, reviewable changes over broad framework expansion.
 
 ## Local Workflow
@@ -46,6 +46,12 @@ When adding framework features, preserve the existing package boundaries:
 - `packages/input`: DOM input bridge and input-focused systems
 - `packages/create-arcane`: scaffolding
 
+## Releases (#BuildInPublic)
+
+- Tag milestones from the repo root (e.g. `git tag -a v0.2.0 -m "V2.0: multiplayer + mobile demo UI"`).
+- Summarize user-facing changes in **`CHANGELOG.md`** before tagging.
+- `package.json` **`version`** should match the release tag for the monorepo workspace.
+
 ## Tests And Docs
 
 - Add or update Vitest coverage for every public function you introduce.
@@ -55,7 +61,7 @@ When adding framework features, preserve the existing package boundaries:
 
 ## Guidance For AI Agents
 
-- Re-check `AGENTS.md`, **`PROMPT.md`**, and any archived Cursor prompts before making assumptions.
+- Re-check `AGENTS.md` and the **PRD** / **README** before making assumptions.
 - Inspect the existing implementation first; do not invent missing architecture if a lighter extension will work.
 - Avoid feature creep. Stage work should feel polished, not bigger.
 - Prefer example-local helpers for demo behavior instead of expanding package APIs just to support one example.
@@ -70,6 +76,6 @@ Do not add these unless a task explicitly asks for them:
 - asset pipelines
 - audio
 - UI frameworks
-- networking (in scope only for **PRD Stage 12** — see **`PROMPT.md`**)
+- production-grade networking products beyond the **hello-cube** relay prototype (see **PRD §1.3**)
 - plugin systems
 - WebGPU renderer work

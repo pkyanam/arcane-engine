@@ -1,4 +1,10 @@
-import { addComponent, createEntity, getComponent, query, registerSystem } from '@arcane-engine/core';
+import {
+  addComponent,
+  createEntity,
+  getComponent,
+  query,
+  registerSystem,
+} from '@arcane-engine/core';
 import type { World } from '@arcane-engine/core';
 import {
   BoxCollider,
@@ -27,6 +33,7 @@ import {
 } from '../src/fpsArenaSetup.js';
 import { Health } from '../src/components/health.js';
 import { GameState } from '../src/components/gameState.js';
+import { NetworkState } from '../src/components/networkState.js';
 import { damageZoneSystem } from '../src/damageZoneSystem.js';
 import { createArcaneHud, createMuzzleLayer } from '../src/fpsHud.js';
 import { gameStateSystem } from '../src/gameStateSystem.js';
@@ -34,6 +41,8 @@ import { getGameContext } from '../src/runtime/gameContext.js';
 import { requestSceneChange } from '../src/runtime/sceneTransitions.js';
 import { healthSystem } from '../src/healthSystem.js';
 import { hitFlashRestoreSystem } from '../src/hitFlashRestoreSystem.js';
+import { resolveMultiplayerWsUrl } from '../src/multiplayerWsUrl.js';
+import { networkSyncSystem } from '../src/networkSyncSystem.js';
 import { weaponSystem } from '../src/weaponSystem.js';
 
 let physicsCtx: PhysicsContext | undefined;
@@ -43,6 +52,8 @@ let hudRoot: HTMLDivElement | undefined;
 let muzzleLayer: HTMLDivElement | undefined;
 let muzzleTimeout: ReturnType<typeof setTimeout> | undefined;
 let escListener: ((e: KeyboardEvent) => void) | undefined;
+let socket: WebSocket | undefined;
+let netDispose: (() => void) | undefined;
 
 function triggerMuzzleFlash(): void {
   if (!muzzleLayer) return;
@@ -87,6 +98,9 @@ export function setup(world: World): void {
     phase: 'playing',
   });
 
+  const netEntity = createEntity(world);
+  addComponent(world, netEntity, NetworkState);
+
   ctx.camera.position.set(0, 3.7, 0);
   ctx.camera.rotation.set(0, 0, 0, 'YXZ');
 
@@ -98,13 +112,19 @@ export function setup(world: World): void {
   window.addEventListener('keydown', escListener);
 
   const hud = createArcaneHud(
-    'Click canvas to capture mouse — WASD move, Space jump, shoot targets (3 hits each). Glowing red floor pad in the +X,+Z corner hurts. R respawn when dead. Esc → title.',
+    'Multiplayer — other players are colored boxes. Shoot them with hitscan (relayed). Red floor pad still hurts. Run relay: pnpm --filter @arcane-engine/server start. Esc → title.',
   );
   hudRoot = hud.root;
   document.body.appendChild(hudRoot);
 
   muzzleLayer = createMuzzleLayer();
   document.body.appendChild(muzzleLayer);
+
+  const wsUrl = resolveMultiplayerWsUrl();
+  socket = new WebSocket(wsUrl);
+
+  const net = networkSyncSystem(physicsCtx, ctx, socket, buckets);
+  netDispose = net.dispose;
 
   registerSystem(world, hitFlashRestoreSystem());
   registerSystem(world, physicsSystem(physicsCtx));
@@ -114,10 +134,16 @@ export function setup(world: World): void {
     world,
     weaponSystem(physicsCtx, {
       onFire: triggerMuzzleFlash,
+      onShootRelay: (payload) => {
+        if (socket?.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ type: 'shoot', ...payload }));
+        }
+      },
     }),
   );
   registerSystem(world, damageZoneSystem(DAMAGE_ZONE_FPS));
   registerSystem(world, healthSystem(physicsCtx, ctx));
+  registerSystem(world, net.system);
   registerSystem(
     world,
     gameStateSystem(physicsCtx, hud.handles, {
@@ -138,6 +164,12 @@ export function teardown(world: World): void {
     window.removeEventListener('keydown', escListener);
     escListener = undefined;
   }
+
+  netDispose?.();
+  netDispose = undefined;
+
+  socket?.close();
+  socket = undefined;
 
   inputHandle?.dispose();
   inputHandle = undefined;

@@ -1,0 +1,28 @@
+# Changelog
+
+All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [0.2.0] — 2026-03-27
+
+### Added
+
+- **`@arcane-engine/server`**: WebSocket relay (`welcome`, `move`, `shoot`, `leave`), max 4 clients, Vitest coverage.
+- **`examples/hello-cube`**: `scenes/multiplayer.ts` (**M**), `networkSyncSystem`, `NetworkState`, `RemotePlayer` ghosts, `weaponSystem` `onShootRelay`, shared `fpsArenaSetup` / `fpsHud` with fps-test.
+- **`VITE_WS_URL`** and `resolveMultiplayerWsUrl()` for static + relay deploy (documented in README).
+- **Mobile / touch**: `mobileControls` overlay (scene picker, move stick, look / jump / fire / respawn on FPS & multiplayer).
+- **Vite** `server.host: true` in hello-cube for LAN dev.
+
+### Changed
+
+- Root **`pnpm test`** builds **`@arcane-engine/server`** before workspace tests.
+- **`GameContext`** includes `getCurrentSceneName()` for mobile UI.
+
+### Docs
+
+- **PRD V2**: Stages 1–12 marked complete; §10 post-V2; §11 definition of done marked met.
+- **README**, **AGENTS.md**, **CLAUDE.md**, **CONTRIBUTING.md** aligned with V2.0 shipped.
+- Removed **`PROMPT.md`** (Stage 12 handoff — work landed).
+
+## [0.1.0] — earlier
+
+- Initial public monorepo: core, renderer, input, physics, create-arcane; hello-cube through fps-test (Stage 11).

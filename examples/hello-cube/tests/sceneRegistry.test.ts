@@ -30,7 +30,7 @@ describe('discoverScenes', () => {
   it('auto-discovers scenes from the scenes directory', () => {
     const scenes = discoverScenes();
 
-    expect(Object.keys(scenes).sort()).toEqual(['fps-test', 'gameplay', 'physics', 'title']);
+    expect(Object.keys(scenes).sort()).toEqual(['fps-test', 'gameplay', 'multiplayer', 'physics', 'title']);
     expect(scenes.title.setup).toEqual(expect.any(Function));
     expect(scenes.gameplay.setup).toEqual(expect.any(Function));
     expect(scenes.physics.setup).toEqual(expect.any(Function));

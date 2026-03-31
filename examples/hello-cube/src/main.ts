@@ -12,7 +12,7 @@ void (async () => {
   await initPhysics();
 
   const world = createWorld();
-  const ctx = createRenderer();
+  const ctx = createRenderer(gameConfig.renderer ?? {});
 
   applyGameConfig(ctx, gameConfig);
 

@@ -1,7 +1,14 @@
 import { query, getComponent, registerSystem, addComponent } from '@arcane-engine/core';
 import type { SystemFn, World } from '@arcane-engine/core';
 import { createInputManager, InputState } from '@arcane-engine/input';
-import { renderSystem, spawnMesh, MeshRef, Spin } from '@arcane-engine/renderer';
+import {
+  addDirectionalShadowLight,
+  addEnvironmentLighting,
+  renderSystem,
+  spawnMesh,
+  MeshRef,
+  Spin,
+} from '@arcane-engine/renderer';
 import * as THREE from 'three';
 import { spinSystem } from '../src/spinSystem.js';
 import { getGameContext } from '../src/runtime/gameContext.js';
@@ -12,7 +19,7 @@ let inputHandle: ReturnType<typeof createInputManager> | undefined;
 let mesh: THREE.Mesh | null = null;
 let geometry: THREE.BufferGeometry | undefined;
 let material: THREE.Material | undefined;
-let lights: THREE.Light[] = [];
+let sceneObjects: THREE.Object3D[] = [];
 
 const titleInputSystem: SystemFn = (world: World): void => {
   for (const entity of query(world, [InputState])) {
@@ -35,16 +42,23 @@ export function setup(world: World): void {
   const entity = spawnMesh(world, ctx, geometry, material, { x: 0, y: 0, z: 0 });
   addComponent(world, entity, Spin, { axis: 'y', speed: 1.2 });
   mesh = getComponent(world, entity, MeshRef)?.mesh ?? null;
-
-  const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
-  keyLight.position.set(3, 4, 5);
-
-  const fillLight = new THREE.AmbientLight(0xffffff, 1.2);
-
-  lights = [keyLight, fillLight];
-  for (const light of lights) {
-    ctx.scene.add(light);
+  if (mesh) {
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
   }
+
+  const environmentLights = addEnvironmentLighting(ctx, {
+    ambientIntensity: 0.22,
+    hemisphereIntensity: 1,
+    skyColor: 0xe0f2fe,
+    groundColor: 0x020617,
+  });
+  const shadowRig = addDirectionalShadowLight(ctx, {
+    intensity: 2.5,
+    position: { x: 3, y: 4, z: 5 },
+    shadowCameraExtent: 8,
+  });
+  sceneObjects = [...environmentLights, shadowRig.light, shadowRig.target];
 
   ctx.camera.position.set(0, 0.5, 5);
   ctx.camera.lookAt(0, 0, 0);
@@ -89,8 +103,8 @@ export function teardown(_world: World): void {
   material?.dispose();
   material = undefined;
 
-  for (const light of lights) {
-    ctx.scene.remove(light);
+  for (const object of sceneObjects) {
+    ctx.scene.remove(object);
   }
-  lights = [];
+  sceneObjects = [];
 }

@@ -67,6 +67,27 @@ describe('renderSystem', () => {
     expect(mesh.scale.z).toBe(0.5);
   });
 
+  it('syncs transforms for model root groups as well as meshes', () => {
+    const world = createWorld();
+    const ctx = makeMockCtx();
+    const system = renderSystem(ctx);
+
+    const entity = createEntity(world);
+    const root = new THREE.Group();
+    addComponent(world, entity, Position, { x: -2, y: 4, z: 6 });
+    addComponent(world, entity, Rotation, { x: 0.1, y: 0.2, z: 0.3 });
+    addComponent(world, entity, Scale, { x: 1.5, y: 2, z: 0.75 });
+    addComponent(world, entity, MeshRef, { mesh: root });
+
+    system(world, 0);
+
+    expect(root.position.toArray()).toEqual([-2, 4, 6]);
+    expect(root.rotation.x).toBeCloseTo(0.1);
+    expect(root.rotation.y).toBeCloseTo(0.2);
+    expect(root.rotation.z).toBeCloseTo(0.3);
+    expect(root.scale.toArray()).toEqual([1.5, 2, 0.75]);
+  });
+
   it('calls ctx.renderer.render with scene and camera', () => {
     const world = createWorld();
     const ctx = makeMockCtx();

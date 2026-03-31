@@ -2,7 +2,14 @@
 
 Optional physics package for Arcane Engine, powered by [Rapier](https://rapier.rs/).
 
-Adds fixed and dynamic rigid bodies with box colliders.  Physics transforms sync automatically into the existing `Position` and `Rotation` components, so the renderer picks them up with no extra wiring.
+This package now covers the full shipped V2 physics surface:
+
+- fixed, dynamic, and kinematic rigid bodies
+- box colliders
+- `raycast()` for hitscan and interaction checks
+- `CharacterController` + `characterControllerSystem()` for FPS-style movement
+
+Dynamic body transforms sync back into ECS `Position` and `Rotation` automatically, so the renderer picks them up with no extra wiring. Kinematic bodies are moved by your code.
 
 ## Install
 
@@ -39,6 +46,29 @@ addComponent(world, cube, RigidBody, { type: 'dynamic' });
 addComponent(world, cube, BoxCollider, { hx: 0.5, hy: 0.5, hz: 0.5, restitution: 0.3 });
 ```
 
+## Common FPS stack
+
+```ts
+import { registerSystem } from '@arcane-engine/core';
+import { fpsCameraSystem } from '@arcane-engine/input';
+import { renderSystem } from '@arcane-engine/renderer';
+import {
+  characterControllerSystem,
+  createPhysicsContext,
+  initPhysics,
+  physicsSystem,
+} from '@arcane-engine/physics';
+
+await initPhysics();
+
+const physCtx = createPhysicsContext();
+
+registerSystem(world, physicsSystem(physCtx));
+registerSystem(world, characterControllerSystem(physCtx));
+registerSystem(world, fpsCameraSystem(rendererCtx));
+registerSystem(world, renderSystem(rendererCtx));
+```
+
 ## API
 
 ### `initPhysics(): Promise<void>`
@@ -60,13 +90,46 @@ System factory.  Returns a system that:
 2. Steps the simulation.
 3. Syncs dynamic body transforms back into ECS `Position` and `Rotation`.
 
+Fixed and kinematic bodies are not moved by the sync step.
+
+### `characterControllerSystem(ctx): SystemFn`
+
+System factory for FPS-style kinematic movement.
+
+Use it with:
+
+- `RigidBody` set to `{ type: 'kinematic' }`
+- `BoxCollider`
+- `Position`
+- `FPSCamera` from `@arcane-engine/input`
+- `CharacterController`
+
+It reads shared `InputState`, moves the kinematic body through Rapier's character controller, applies gravity and jump, updates `Position`, and writes `CharacterController.grounded`.
+
+### `raycast(ctx, origin, direction, maxDistance): RaycastHit | null`
+
+Cast a ray through the current Rapier world and return the first hit, or `null`.
+
+```ts
+const hit = raycast(
+  physCtx,
+  { x: 0, y: 2, z: 0 },
+  { x: 0, y: 0, z: -1 },
+  100,
+);
+```
+
 ### Components
 
 #### `RigidBody`
 
 ```ts
-{ type: 'fixed' | 'dynamic' }
+{ type: 'fixed' | 'dynamic' | 'kinematic' }
 ```
+
+- `'fixed'`: immovable world geometry
+- `'dynamic'`: simulated by Rapier
+- `'kinematic'`: moved by your systems each tick
 
 #### `BoxCollider`
 
@@ -86,8 +149,33 @@ Note: half-extents follow Rapier's convention.  A 1 m × 1 m × 1 m cube uses `h
 
 Written by `physicsSystem` to track the Rapier body handle.  Do not add or modify this component directly.
 
+#### `CharacterController`
+
+```ts
+{
+  speed: number;
+  jumpSpeed: number;
+  grounded: boolean;
+  _velocityY: number; // internal gravity/jump state
+}
+```
+
+Use with kinematic player bodies. `grounded` is written by `characterControllerSystem`. `_velocityY` is internal state and should usually stay at its default unless you are respawning or resetting the controller.
+
+### `RaycastHit`
+
+```ts
+{
+  colliderHandle: number;
+  point: { x: number; y: number; z: number };
+  normal: { x: number; y: number; z: number };
+  distance: number;
+}
+```
+
 ## Notes
 
 - `@arcane-engine/core` and `@arcane-engine/renderer` remain physics-agnostic.
 - Each physics scene should create its own `PhysicsContext`; do not share contexts across scenes.
 - The system uses Rapier's default fixed timestep (1/60 s).
+- `createPhysicsContext()` throws until `await initPhysics()` has completed.

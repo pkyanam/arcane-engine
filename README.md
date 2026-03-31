@@ -4,7 +4,7 @@
 
 We are **building in public** — the repo lives on GitHub, and we share progress openly (say hi on X if you try it). Perfect is not the goal; **clear and learnable** is.
 
-**Status (March 2026):** **V2.0 shipped** — PRD Stages **1–12** complete (`hello-cube`: **F** fps-test, **M** multiplayer, touch overlay on phones). Roadmap table: [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md). **Release `v0.2.0`:** see [`CHANGELOG.md`](./CHANGELOG.md). *#BuildInPublic*
+**Status (March 2026):** **V2.0 shipped**, **Stage 13: V2 Polish + Docs Sync is complete**, **Stage 14: Renderer Upgrade for Real Assets is complete**, **Stage 15: Texture Pipeline is complete**, and **Stage 16: 3D Model Loading is complete**. PRD Stages **1–12** are complete in code and tests (`hello-cube`: **F** fps-test, **M** multiplayer, touch overlay on phones). The next default V3 task is **Stage 17: Animation Playback**. Roadmap tables: [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) and [`ARCANE_ENGINE_PRD_V3.md`](./ARCANE_ENGINE_PRD_V3.md). **Release `v0.2.0`:** see [`CHANGELOG.md`](./CHANGELOG.md). *#BuildInPublic*
 
 ---
 
@@ -43,6 +43,74 @@ The big-picture plan is in [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md
 - **Multiplayer** (**M**): `packages/server` relay (≤4 players), `networkSyncSystem`, colored **ghost** boxes for remote peers, **shoot** relay so each client raycasts remote shots against its own player body
 
 If the PRD’s checklist table ever looks stale, **the code and tests win**.
+
+## Current capabilities
+
+| Area | Shipped now |
+|------|-------------|
+| `@arcane-engine/core` | ECS world, entities, components, queries, systems, game loop, scene manager |
+| `@arcane-engine/renderer` | Three.js setup, renderer defaults, environment/shadow lighting helpers, render system, transform components, `spawnMesh` helper |
+| `@arcane-engine/assets` | Texture loading, glTF / GLB loading, explicit cache reuse, `spawnModel`, and Vite-friendly asset imports |
+| `@arcane-engine/input` | Keyboard + mouse input, orbit follow camera, FPS look, pointer lock, shared `InputState` |
+| `@arcane-engine/physics` | Rapier init/context, fixed/dynamic/kinematic bodies, box colliders, `raycast`, character controller |
+| `@arcane-engine/server` | Small Node WebSocket relay for up to 4 multiplayer clients |
+| `hello-cube` example | Title, gameplay, textured floor/walls, imported `.glb` props, physics, FPS, multiplayer, HUD, respawn, touch overlay |
+| Starter template | Title + gameplay scenes, runtime helpers, assets package dependency, and tiny texture + model doc paths via `create-arcane` |
+
+---
+
+## Renderer Defaults For Real Assets
+
+Stage 14 is now in place. The renderer is less “cube demo only” without adding a full asset pipeline yet.
+
+- `createRenderer()` now accepts `background`, `clearColor`, `maxPixelRatio`, `shadowMap`, and `outputColorSpace`
+- default output color space is **`THREE.SRGBColorSpace`**
+- provided canvases now resize correctly too, not just auto-created full-window canvases
+- `@arcane-engine/renderer` includes `addEnvironmentLighting()` and `addDirectionalShadowLight()` for beginner-friendly PBR lighting defaults
+
+Recommended starting point for `MeshStandardMaterial` and imported models:
+
+- keep ambient light subtle
+- use hemisphere light for most soft fill
+- add one directional key light for form and shadows
+- set important meshes to `castShadow = true` and large surfaces to `receiveShadow = true`
+
+Stage 14 made Stage 15 possible by fixing the main “textured scenes look wrong” problems first: modern color-space defaults, better lighting helpers, and cleaner resize behavior.
+
+---
+
+## Texture Workflow
+
+Stage 15 adds an official texture path without jumping to a full asset framework.
+
+- `@arcane-engine/assets` exports `createTextureCache()`, `loadTexture(...)`, and `disposeAssetCache(...)`
+- `loadTexture()` supports repeat / clamp wrapping, simple filtering choices, and explicit color-space handling
+- the cache keeps the same texture source from loading over and over
+- `hello-cube` gameplay now uses the official workflow for textured floor and wall materials
+
+The goal is to keep textures beginner-friendly:
+
+1. import a file with Vite
+2. load it with `loadTexture(...)`
+3. assign it to a material map
+4. dispose the cache during scene teardown
+
+## Model Workflow
+
+Stage 16 adds the first official 3D model path without turning Arcane Engine
+into a hidden asset pipeline.
+
+- `@arcane-engine/assets` exports `loadModel(cache, source)` and `spawnModel(world, ctx, modelAsset, options?)`
+- Stage 16 supports **glTF / GLB only**
+- one loaded model source can be spawned more than once without reloading the file
+- `hello-cube` gameplay now includes imported crystal props loaded from one repo-local `.glb`
+
+The beginner-friendly mental model is:
+
+1. import a `.glb` with Vite, usually via `?url`
+2. load it once with `loadModel(...)`
+3. call `spawnModel(...)` anywhere you want a cloned prop
+4. dispose the same scene-local asset cache during teardown
 
 ---
 
@@ -94,6 +162,7 @@ arcane-engine/
 |- packages/
 |  |- core/            # ECS, world, queries, systems, game loop, scenes
 |  |- renderer/        # Three.js bridge and render components
+|  |- assets/          # Texture + glTF/GLB loading, caching, and disposal helpers
 |  |- input/           # keyboard, mouse, movement, orbit + FPS camera
 |  |- physics/        # Rapier: bodies, colliders, raycast, character controller
 |  |- server/          # WebSocket relay (Stage 12 multiplayer)
@@ -270,8 +339,10 @@ Set the starting scene in `game.config.ts` (`initialScene`).
 |---------|---------|
 | `@arcane-engine/core` | World, entities, components, queries, systems, loop, scenes |
 | `@arcane-engine/renderer` | Three.js setup, `spawnMesh`, `renderSystem`, transform components |
+| `@arcane-engine/assets` | `loadTexture`, cache reuse, explicit texture disposal |
 | `@arcane-engine/input` | `InputState`, movement, orbit camera, **FPS camera + pointer lock** |
 | `@arcane-engine/physics` | Rapier world, colliders, **character controller**, **`raycast`** |
+| `@arcane-engine/server` | Node relay for multiplayer `move` / `shoot` / `leave` messages |
 | `@arcane-engine/create-arcane` | `npx` project scaffold |
 
 JSDoc lives next to the source in `packages/*/src`.
@@ -284,6 +355,9 @@ JSDoc lives next to the source in `packages/*/src`.
 - **WASD** gameplay and a **title** screen  
 - **Physics** toys (P)  
 - A **first-person room** (F): floors, walls, jump, pointer lock  
+- A textured gameplay scene using the official Stage 15 workflow  
+- **Multiplayer relay** (M): remote ghost players and relayed hitscan shots
+- **Touch fallback UI** on phones and coarse pointers
 
 It is not a shipped game — it is a **readable proof** that the pieces work together.
 
@@ -321,4 +395,6 @@ We want this repo to be easy to **read**, **fork**, **teach**, and **extend** �
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) — how to contribute  
 - [`AGENTS.md`](./AGENTS.md) — notes for Codex and other agents  
 - [`CLAUDE.md`](./CLAUDE.md) — notes for Claude Code  
+- [`packages/assets/README.md`](./packages/assets/README.md) — texture loading and disposal
 - [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) — roadmap to multiplayer FPS  
+- [`ARCANE_ENGINE_PRD_V3.md`](./ARCANE_ENGINE_PRD_V3.md) — proposed post-V2 roadmap  

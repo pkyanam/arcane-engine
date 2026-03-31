@@ -5,7 +5,8 @@ Arcane Engine is intentionally small. Contributions should make the framework ea
 ## Start Here
 
 - Read `AGENTS.md` before changing code or adding files.
-- For roadmap and “done” criteria, read **`ARCANE_ENGINE_PRD_V2.md`** (V2 track is complete; §10 is post-V2 guidance).
+- For shipped scope, read **`ARCANE_ENGINE_PRD_V2.md`** (V2 track is complete; §10 is post-V2 guidance).
+- For the current default follow-up scope, read **`ARCANE_ENGINE_PRD_V3.md`** starting at **Stage 17: Animation Playback**.
 - Keep work aligned with **CONTRIBUTING** / **AGENTS** and avoid scope in **PRD §1.3** unless explicitly requested.
 - Prefer small, reviewable changes over broad framework expansion.
 
@@ -43,7 +44,10 @@ When adding framework features, preserve the existing package boundaries:
 
 - `packages/core`: ECS, queries, systems, scenes, game loop
 - `packages/renderer`: Three.js integration
+- `packages/assets`: texture loading, glTF / GLB loading, caching, and disposal helpers
 - `packages/input`: DOM input bridge and input-focused systems
+- `packages/physics`: Rapier integration, colliders, raycast, character controller
+- `packages/server`: Node-only multiplayer relay
 - `packages/create-arcane`: scaffolding
 
 ## Releases (#BuildInPublic)
@@ -58,6 +62,7 @@ When adding framework features, preserve the existing package boundaries:
 - Keep tests importing from `src/`, not from built `dist/`.
 - Add JSDoc for new public types and functions.
 - Update `README.md`, starter docs, or package docs when the onboarding path changes.
+- Keep package READMEs aligned with the real exported APIs; do not leave stage-specific docs behind the code.
 
 ## Guidance For AI Agents
 

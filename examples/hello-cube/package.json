@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "three": "^0.169.0",
+    "@arcane-engine/assets": "workspace:*",
     "@arcane-engine/core": "workspace:*",
     "@arcane-engine/input": "workspace:*",
     "@arcane-engine/physics": "workspace:*",

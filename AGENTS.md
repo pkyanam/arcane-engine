@@ -24,9 +24,9 @@ Simple mental model:
 - system = a rule that updates things
 - scene = one game screen
 
-**Roadmap:** See [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) for the full **browser multiplayer FPS** plan (Stages 1–12). If that document’s status table disagrees with the repo, **trust the code and tests**.
+**Roadmap:** See [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) for the shipped **browser multiplayer FPS** plan (Stages 1–12), then [`ARCANE_ENGINE_PRD_V3.md`](./ARCANE_ENGINE_PRD_V3.md) for the proposed post-V2 roadmap. If either roadmap document disagrees with the repo, **trust the code and tests**.
 
-**Current stage:** **PRD V2.0 complete** (Stages 1–12): **`packages/server`**, **`multiplayer`** (**M**), **`networkSyncSystem`**, **`mobileControls`** for touch. Hosting: **README** (`VITE_WS_URL`), **PRD** §8.4 / §10, **CHANGELOG** for releases.
+**Current stage:** **V2.0 is shipped**, **Stage 13 is complete**, **Stage 14 is complete**, **Stage 15 is complete**, and **Stage 16 is complete**. The default next step is **Stage 17: Animation Playback**. Current shipped surface includes **`packages/assets`**, **`packages/server`**, textured **`hello-cube`** gameplay, imported **glTF / GLB** model props via **`loadModel(...)`** / **`spawnModel(...)`**, **`multiplayer`** (**M**), **`networkSyncSystem`**, **`VITE_WS_URL`**, **`mobileControls`** for touch, and the Stage 14 renderer defaults / lighting helpers. Hosting notes live in **README** and release notes in **CHANGELOG**.
 
 ---
 
@@ -37,6 +37,7 @@ arcane-engine/
 |- packages/
 |  |- core/           # ECS, game loop, world, scenes
 |  |- renderer/       # Three.js wrapper
+|  |- assets/         # Texture + glTF/GLB loading, caching, disposal helpers
 |  |- input/          # Keyboard/mouse, movement, orbit + FPS camera
 |  |- physics/        # Rapier: colliders, raycast, character controller
 |  |- server/          # WebSocket relay (multiplayer)
@@ -67,6 +68,7 @@ arcane-engine/
 |---------|----------------|
 | `@arcane-engine/core` | ECS primitives, queries, system registration, game loop, scene lifecycle |
 | `@arcane-engine/renderer` | Three.js scene/camera/renderer setup and mesh rendering helpers |
+| `@arcane-engine/assets` | Texture loading, glTF / GLB loading, cache reuse, model spawn helpers, and explicit asset disposal helpers |
 | `@arcane-engine/input` | DOM input bridge, movement, camera follow, FPS look + pointer lock |
 | `@arcane-engine/physics` | Rapier world, rigid bodies, box colliders, raycast, character controller |
 | `@arcane-engine/create-arcane` | CLI that scaffolds starter projects |
@@ -83,6 +85,7 @@ import {
   createWorld,
   createEntity,
   destroyEntity,
+  resetWorld,
   addComponent,
   removeComponent,
   getComponent,
@@ -90,7 +93,10 @@ import {
   defineComponent,
   query,
   registerSystem,
+  unregisterSystem,
   runSystems,
+  createGameLoop,
+  createSceneManager,
 } from '@arcane-engine/core';
 ```
 
@@ -128,6 +134,8 @@ Import from `@arcane-engine/renderer`.
 ```ts
 import {
   createRenderer,
+  addEnvironmentLighting,
+  addDirectionalShadowLight,
   renderSystem,
   spawnMesh,
   Position,
@@ -138,6 +146,8 @@ import {
 } from '@arcane-engine/renderer';
 import type { RendererContext } from '@arcane-engine/renderer';
 ```
+
+`createRenderer()` now also accepts renderer options for clear color, scene background, max pixel ratio, shadow map setup, and output color space.
 
 Systems that need the renderer should use a factory:
 
@@ -250,7 +260,9 @@ If something is technically correct but hard to explain, prefer the simpler vers
 - **Stages 1–12** (PRD V2 FPS track) are implemented and tested
 - Physics package: fixed / dynamic / **kinematic** bodies, **`raycast()`**, **`CharacterController`** + **`characterControllerSystem`**
 - Input package: **`FPSCamera`**, **`fpsCameraSystem`**, **`fpsMovementSystem`**, **`InputState.mouseButtons`**, pointer lock via **`createInputManager(world, canvas)`**
-- **hello-cube**: title, gameplay, physics (**P**), **fps-test** (**F**), **multiplayer** (**M**); **`@arcane-engine/server`** relay; touch devices get **`mobileControls`** overlay (see README); app boot awaits **`initPhysics()`**; root **`pnpm test`** builds **core → renderer → input → physics → server** before workspace tests
+- **hello-cube**: title, gameplay, textured floor/walls, physics (**P**), **fps-test** (**F**), **multiplayer** (**M**); **`@arcane-engine/server`** relay; touch devices get **`mobileControls`** overlay (see README); app boot awaits **`initPhysics()`**; root **`pnpm test`** builds **core → renderer → assets → input → physics → server** before workspace tests
+- **Stage 14 renderer upgrade**: `createRenderer()` supports background / clear color / pixel ratio / shadow defaults, provided canvases resize correctly, and `@arcane-engine/renderer` exports `addEnvironmentLighting()` plus `addDirectionalShadowLight()`
+- **Stage 15 texture pipeline + Stage 16 model loading**: `@arcane-engine/assets` exports `createTextureCache()`, `loadTexture(...)`, `loadModel(...)`, `spawnModel(...)`, and `disposeAssetCache(...)`; texture and model source reuse is cached; docs include teardown guidance; `hello-cube` gameplay validates textured rendering plus imported `.glb` props
 - `packages/create-arcane` scaffolds starter projects; `templates/starter` builds
 - root `README.md` and `CONTRIBUTING.md` exist; public APIs have JSDoc
 - verified from repo root: `pnpm test`, `pnpm typecheck`, `pnpm build`
@@ -288,7 +300,7 @@ test(input): cover pointer lock
 chore: update lockfile
 ```
 
-Valid scopes: `core`, `renderer`, `input`, `physics`, `server`, `create-arcane`, `examples`, `docs`
+Valid scopes: `core`, `renderer`, `assets`, `input`, `physics`, `server`, `create-arcane`, `examples`, `docs`
 
 ---
 

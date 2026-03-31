@@ -1,3 +1,12 @@
+import {
+  createTextureCache,
+  disposeAssetCache,
+  loadModel,
+  loadTexture,
+  spawnModel,
+  type AssetCache,
+  type TextureLoadContext,
+} from '@arcane-engine/assets';
 import { addComponent, getComponent, query, registerSystem } from '@arcane-engine/core';
 import type { SystemFn, World } from '@arcane-engine/core';
 import {
@@ -8,6 +17,8 @@ import {
   movementSystem,
 } from '@arcane-engine/input';
 import {
+  addDirectionalShadowLight,
+  addEnvironmentLighting,
   MeshRef,
   Position,
   Scale,
@@ -16,6 +27,9 @@ import {
   spawnMesh,
 } from '@arcane-engine/renderer';
 import * as THREE from 'three';
+import floorTextureUrl from '../src/assets/gameplay-floor.svg';
+import wallTextureUrl from '../src/assets/gameplay-wall.svg';
+import crystalModelUrl from '../src/assets/arcane-crystal.glb?url';
 import { FloatingMotion, floatingMotionSystem } from '../src/floatingMotion.js';
 import { getGameContext } from '../src/runtime/gameContext.js';
 import { requestSceneChange } from '../src/runtime/sceneTransitions.js';
@@ -26,6 +40,8 @@ let sceneObjects: THREE.Object3D[] = [];
 let hud: HTMLDivElement | undefined;
 let geometries: THREE.BufferGeometry[] = [];
 let materials: THREE.Material[] = [];
+let textureCache: AssetCache | undefined;
+let assetLoadGeneration = 0;
 
 const FLOATING_CUBE_COUNT = 20;
 const FLOATING_AXIS_OPTIONS: Array<'x' | 'y' | 'z'> = ['x', 'y', 'z'];
@@ -35,6 +51,11 @@ const FLOATING_COLORS = [
   0x22d3ee,
   0x2dd4bf,
   0xf59e0b,
+];
+const IMPORTED_PROP_LAYOUT = [
+  { x: -14, y: 1.2, z: -10, rotationY: 0.2, scale: 1.25 },
+  { x: -6, y: 1.05, z: 14, rotationY: -0.45, scale: 0.95 },
+  { x: 16, y: 1.45, z: 8, rotationY: 0.7, scale: 1.5 },
 ];
 
 const gameplaySceneSystem: SystemFn = (world: World): void => {
@@ -62,7 +83,7 @@ const gameplayHudSystem: SystemFn = (world: World): void => {
     '<strong>Gameplay Demo</strong>' +
     `<span>Move with WASD or arrows. ` +
     `Player x ${position.x.toFixed(1)}, z ${position.z.toFixed(1)}. ` +
-    'Press Escape to return to the title scene.</span>';
+    'Textured walls and imported crystal props reuse one scene-local asset cache. Press Escape to return to the title scene.</span>';
 };
 
 function randomRange(min: number, max: number): number {
@@ -93,10 +114,93 @@ function createHud(): HTMLDivElement {
   return element;
 }
 
+async function loadGameplayTextures(
+  textureCtx: TextureLoadContext,
+  groundMaterial: THREE.MeshStandardMaterial,
+  wallMaterial: THREE.MeshStandardMaterial,
+  generation: number,
+): Promise<void> {
+  try {
+    const [groundTexture, wallTexture] = await Promise.all([
+      loadTexture(textureCtx, floorTextureUrl, {
+        repeat: { x: 12, y: 12 },
+        colorSpace: 'srgb',
+      }),
+      loadTexture(textureCtx, wallTextureUrl, {
+        repeat: { x: 8, y: 2 },
+        colorSpace: 'srgb',
+      }),
+    ]);
+
+    if (generation !== assetLoadGeneration || textureCache !== textureCtx.assetCache) {
+      return;
+    }
+
+    groundMaterial.color.set(0xffffff);
+    groundMaterial.map = groundTexture;
+    groundMaterial.needsUpdate = true;
+
+    wallMaterial.color.set(0xffffff);
+    wallMaterial.map = wallTexture;
+    wallMaterial.needsUpdate = true;
+  } catch (error) {
+    if (generation === assetLoadGeneration) {
+      console.warn('Arcane Engine gameplay texture load failed.', error);
+    }
+  }
+}
+
+function setRootShadows(root: THREE.Object3D): void {
+  root.traverse((object) => {
+    if (object instanceof THREE.Mesh) {
+      object.castShadow = true;
+      object.receiveShadow = true;
+    }
+  });
+}
+
+async function loadGameplayModels(
+  world: World,
+  ctx: ReturnType<typeof getGameContext>['ctx'],
+  cache: AssetCache,
+  generation: number,
+): Promise<void> {
+  try {
+    const crystalAsset = await loadModel(cache, crystalModelUrl);
+
+    if (generation !== assetLoadGeneration || textureCache !== cache) {
+      return;
+    }
+
+    for (const prop of IMPORTED_PROP_LAYOUT) {
+      const entity = spawnModel(world, ctx, crystalAsset, {
+        position: { x: prop.x, y: prop.y, z: prop.z },
+        rotation: { y: prop.rotationY },
+        scale: prop.scale,
+      });
+      const root = getComponent(world, entity, MeshRef)?.mesh;
+      if (root) {
+        setRootShadows(root);
+      }
+    }
+  } catch (error) {
+    if (generation === assetLoadGeneration) {
+      console.warn('Arcane Engine gameplay model load failed.', error);
+    }
+  }
+}
+
 export function setup(world: World): void {
   const { ctx } = getGameContext();
 
   inputHandle = createInputManager(world);
+  textureCache = createTextureCache();
+  const textureCtx = {
+    ...ctx,
+    assetCache: textureCache,
+  } satisfies TextureLoadContext;
+  const generation = assetLoadGeneration + 1;
+  assetLoadGeneration = generation;
 
   const playerGeometry = new THREE.BoxGeometry(1, 1, 1);
   const playerMaterial = new THREE.MeshStandardMaterial({
@@ -110,6 +214,11 @@ export function setup(world: World): void {
 
   const cubeEntity = spawnMesh(world, ctx, playerGeometry, playerMaterial, { x: 0, y: 0.55, z: 0 });
   addComponent(world, cubeEntity, Controllable);
+  const playerMesh = getComponent(world, cubeEntity, MeshRef)?.mesh;
+  if (playerMesh) {
+    playerMesh.castShadow = true;
+    playerMesh.receiveShadow = true;
+  }
 
   const floatingGeometry = new THREE.BoxGeometry(0.85, 0.85, 0.85);
   geometries.push(floatingGeometry);
@@ -132,6 +241,11 @@ export function setup(world: World): void {
       y: startY,
       z: startZ,
     });
+    const mesh = getComponent(world, entity, MeshRef)?.mesh;
+    if (mesh) {
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+    }
     const scale = randomRange(0.65, 1.35);
     addComponent(world, entity, Scale, { x: scale, y: scale, z: scale });
     addComponent(world, entity, Spin, {
@@ -155,9 +269,19 @@ export function setup(world: World): void {
     });
   }
 
-  const hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x0f172a, 1.8);
-  const keyLight = new THREE.DirectionalLight(0xfef3c7, 2.8);
-  keyLight.position.set(8, 14, 10);
+  const environmentLights = addEnvironmentLighting(ctx, {
+    ambientIntensity: 0.28,
+    hemisphereIntensity: 1.2,
+    skyColor: 0xe0f2fe,
+    groundColor: 0x0f172a,
+  });
+  const shadowRig = addDirectionalShadowLight(ctx, {
+    color: 0xfef3c7,
+    intensity: 2.8,
+    position: { x: 8, y: 14, z: 10 },
+    shadowCameraExtent: 18,
+    far: 60,
+  });
   const rimLight = new THREE.PointLight(0x22d3ee, 18, 80);
   rimLight.position.set(-12, 7, -10);
   const grid = new THREE.GridHelper(48, 48, 0x334155, 0x1e293b);
@@ -165,7 +289,7 @@ export function setup(world: World): void {
 
   const groundGeometry = new THREE.PlaneGeometry(60, 60);
   const groundMaterial = new THREE.MeshStandardMaterial({
-    color: 0x111827,
+    color: 0x1f2937,
     roughness: 0.96,
     metalness: 0.02,
   });
@@ -175,11 +299,60 @@ export function setup(world: World): void {
   const ground = new THREE.Mesh(groundGeometry, groundMaterial);
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.02;
+  ground.receiveShadow = true;
 
-  sceneObjects = [hemiLight, keyLight, rimLight, ground, grid];
-  for (const object of sceneObjects) {
-    ctx.scene.add(object);
-  }
+  const northSouthWallGeometry = new THREE.BoxGeometry(60, 4, 0.6);
+  const eastWestWallGeometry = new THREE.BoxGeometry(0.6, 4, 60);
+  const wallMaterial = new THREE.MeshStandardMaterial({
+    color: 0x475569,
+    roughness: 0.88,
+    metalness: 0.05,
+  });
+  geometries.push(northSouthWallGeometry, eastWestWallGeometry);
+  materials.push(wallMaterial);
+
+  const northWall = new THREE.Mesh(northSouthWallGeometry, wallMaterial);
+  northWall.position.set(0, 2, -30);
+  northWall.castShadow = true;
+  northWall.receiveShadow = true;
+
+  const southWall = new THREE.Mesh(northSouthWallGeometry, wallMaterial);
+  southWall.position.set(0, 2, 30);
+  southWall.castShadow = true;
+  southWall.receiveShadow = true;
+
+  const eastWall = new THREE.Mesh(eastWestWallGeometry, wallMaterial);
+  eastWall.position.set(30, 2, 0);
+  eastWall.castShadow = true;
+  eastWall.receiveShadow = true;
+
+  const westWall = new THREE.Mesh(eastWestWallGeometry, wallMaterial);
+  westWall.position.set(-30, 2, 0);
+  westWall.castShadow = true;
+  westWall.receiveShadow = true;
+
+  sceneObjects = [
+    ...environmentLights,
+    shadowRig.light,
+    shadowRig.target,
+    rimLight,
+    ground,
+    grid,
+    northWall,
+    southWall,
+    eastWall,
+    westWall,
+  ];
+  ctx.scene.add(rimLight);
+  ctx.scene.add(ground);
+  ctx.scene.add(grid);
+  ctx.scene.add(northWall);
+  ctx.scene.add(southWall);
+  ctx.scene.add(eastWall);
+  ctx.scene.add(westWall);
+
+  void loadGameplayTextures(textureCtx, groundMaterial, wallMaterial, generation);
+  void loadGameplayModels(world, ctx, textureCache, generation);
 
   hud = createHud();
   document.body.appendChild(hud);
@@ -196,6 +369,7 @@ export function setup(world: World): void {
 
 export function teardown(world: World): void {
   const { ctx } = getGameContext();
+  assetLoadGeneration += 1;
 
   inputHandle?.dispose();
   inputHandle = undefined;
@@ -219,6 +393,11 @@ export function teardown(world: World): void {
     material.dispose();
   }
   materials = [];
+
+  if (textureCache) {
+    disposeAssetCache(textureCache);
+    textureCache = undefined;
+  }
 
   for (const object of sceneObjects) {
     ctx.scene.remove(object);

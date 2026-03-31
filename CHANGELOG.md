@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- **`@arcane-engine/assets`**: Stage 16 model loading via `loadModel(cache, source)` and `spawnModel(world, ctx, modelAsset, options?)`.
+- **`examples/hello-cube`**: imported `.glb` crystal props in gameplay, including multiple spawned instances from one loaded model source.
+- **`packages/assets`** tests for model caching, clone/spawn behavior, disposal, and Stage 16 failure handling.
+
+### Changed
+
+- **`AssetCache`** now covers model source reuse as well as textures.
+- **`MeshRef`** can point at a Three.js object root, not only a single mesh, so ECS transforms can move imported model roots cleanly.
+
+### Docs
+
+- Root docs, agent docs, package READMEs, and starter docs now describe Stage 16 as shipped and point the default next step at **Stage 17: Animation Playback**.
+- Added a new **Stage 17** handoff prompt for the next work session.
+
 ## [0.2.0] — 2026-03-27
 
 ### Added

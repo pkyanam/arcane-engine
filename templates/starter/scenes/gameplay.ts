@@ -7,7 +7,14 @@ import {
   InputState,
   movementSystem,
 } from '@arcane-engine/input';
-import { MeshRef, Position, renderSystem, spawnMesh } from '@arcane-engine/renderer';
+import {
+  addDirectionalShadowLight,
+  addEnvironmentLighting,
+  MeshRef,
+  Position,
+  renderSystem,
+  spawnMesh,
+} from '@arcane-engine/renderer';
 import * as THREE from 'three';
 import { getGameContext } from '../src/runtime/gameContext.js';
 import { requestSceneChange } from '../src/runtime/sceneTransitions.js';
@@ -16,6 +23,9 @@ let inputHandle: ReturnType<typeof createInputManager> | undefined;
 let mesh: THREE.Mesh | null = null;
 let geometry: THREE.BufferGeometry | undefined;
 let material: THREE.Material | undefined;
+let ground: THREE.Mesh | null = null;
+let groundGeometry: THREE.BufferGeometry | undefined;
+let groundMaterial: THREE.Material | undefined;
 let sceneObjects: THREE.Object3D[] = [];
 let hud: HTMLDivElement | undefined;
 
@@ -57,18 +67,40 @@ export function setup(world: World): void {
   const cubeEntity = spawnMesh(world, ctx, geometry, material, { x: 0, y: 0.5, z: 0 });
   addComponent(world, cubeEntity, Controllable);
   mesh = getComponent(world, cubeEntity, MeshRef)?.mesh ?? null;
-
-  const pointLight = new THREE.PointLight(0xffffff, 10);
-  pointLight.position.set(5, 5, 5);
-
-  const ambientLight = new THREE.AmbientLight(0xffffff, 2);
-  const grid = new THREE.GridHelper(40, 40, 0x475569, 0x1e293b);
-  grid.position.y = 0;
-
-  sceneObjects = [pointLight, ambientLight, grid];
-  for (const object of sceneObjects) {
-    ctx.scene.add(object);
+  if (mesh) {
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
   }
+
+  const environmentLights = addEnvironmentLighting(ctx, {
+    ambientIntensity: 0.28,
+    hemisphereIntensity: 1.05,
+    skyColor: 0xe0f2fe,
+    groundColor: 0x0f172a,
+  });
+  const shadowRig = addDirectionalShadowLight(ctx, {
+    intensity: 2.2,
+    position: { x: 5, y: 8, z: 6 },
+    shadowCameraExtent: 14,
+    far: 40,
+  });
+  const grid = new THREE.GridHelper(40, 40, 0x475569, 0x1e293b);
+  grid.position.y = 0.01;
+
+  groundGeometry = new THREE.PlaneGeometry(40, 40);
+  groundMaterial = new THREE.MeshStandardMaterial({
+    color: 0x0f172a,
+    roughness: 0.96,
+    metalness: 0.02,
+  });
+  ground = new THREE.Mesh(groundGeometry, groundMaterial);
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -0.01;
+  ground.receiveShadow = true;
+
+  sceneObjects = [...environmentLights, shadowRig.light, shadowRig.target, ground, grid];
+  ctx.scene.add(ground);
+  ctx.scene.add(grid);
 
   hud = document.createElement('div');
   hud.textContent = 'WASD or arrows to move. Press Escape to return to the title scene.';
@@ -110,6 +142,14 @@ export function teardown(_world: World): void {
 
   material?.dispose();
   material = undefined;
+
+  groundGeometry?.dispose();
+  groundGeometry = undefined;
+
+  groundMaterial?.dispose();
+  groundMaterial = undefined;
+
+  ground = null;
 
   for (const object of sceneObjects) {
     ctx.scene.remove(object);

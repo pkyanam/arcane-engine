@@ -1,6 +1,6 @@
 # @arcane-engine/server
 
-Minimal **WebSocket relay** for Stage 12 multiplayer: fan-out `move` and `shoot`, `welcome` on connect, `leave` on disconnect. No game logic.
+Minimal **WebSocket relay** for shipped V2 multiplayer: fan-out `move` and `shoot`, `welcome` on connect, `leave` on disconnect. No game logic and no server-side simulation.
 
 ## Run
 
@@ -23,6 +23,8 @@ const { httpServer, close, port } = startRelayServer({
 
 await close();
 ```
+
+The returned object also includes `wss`, the underlying `WebSocketServer`, when you need lower-level access in app code or tests.
 
 ## Protocol (JSON text frames)
 

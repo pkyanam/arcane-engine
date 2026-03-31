@@ -22,9 +22,9 @@ Core model:
 - system = logic that updates the thing
 - scene = one screen or game state
 
-**Roadmap:** [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) describes the path to a small **multiplayer first-person shooter** in the browser (Stages 1–12). The checklist table in §9 of that doc may lag the repo; treat the codebase and this file as the source of truth for what is already shipped.
+**Roadmap:** [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) describes the shipped **multiplayer first-person shooter** track (Stages 1–12). [`ARCANE_ENGINE_PRD_V3.md`](./ARCANE_ENGINE_PRD_V3.md) proposes the post-V2 roadmap. If a checklist table lags the repo, treat the codebase and tests as the source of truth.
 
-**Current stage:** **PRD V2.0 complete** (Stages 1–12) — **`packages/server`** relay, **`networkSyncSystem`**, **`multiplayer`** scene (**M**), shared **`fpsArenaSetup`** / **`fpsHud`**, **`VITE_WS_URL`**, **`mobileControls`** on touch devices. Post-V2 work is discretionary; see **[`README.md`](./README.md)** (deploy), **[`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md)** §10, **[`CHANGELOG.md`](./CHANGELOG.md)**.
+**Current stage:** **V2.0 is shipped**, **Stage 13 is complete**, **Stage 14 is complete**, **Stage 15 is complete**, and **Stage 16 is complete**. The default next step is **Stage 17: Animation Playback**. Shipped surface includes **`packages/assets`**, the **`packages/server`** relay, **`networkSyncSystem`**, **`multiplayer`** scene (**M**), shared **`fpsArenaSetup`** / **`fpsHud`**, **`VITE_WS_URL`**, **`mobileControls`** on touch devices, textured `hello-cube` gameplay, imported **glTF / GLB** props via **`loadModel(...)`** / **`spawnModel(...)`**, and the Stage 14 renderer defaults / lighting helpers.
 
 ---
 
@@ -35,6 +35,7 @@ arcane-engine/
 |- packages/
 |  |- core/           # ECS, queries, systems, game loop, scenes
 |  |- renderer/       # Three.js wrapper and render helpers
+|  |- assets/         # Texture + glTF/GLB loading, caching, and disposal helpers
 |  |- input/          # DOM input bridge, movement, orbit + FPS camera systems
 |  |- physics/        # Rapier: bodies, colliders, raycast, character controller
 |  |- server/         # Node WebSocket relay (Stage 12)
@@ -65,6 +66,7 @@ arcane-engine/
 |---------|----------------|
 | `@arcane-engine/core` | ECS primitives, query engine, system registration, game loop, scene lifecycle |
 | `@arcane-engine/renderer` | Three.js integration, render components, renderer setup, mesh spawning |
+| `@arcane-engine/assets` | Texture loading, glTF / GLB loading, cache reuse, model spawn helpers, and explicit disposal helpers |
 | `@arcane-engine/input` | Input components, DOM bridge, movement, camera follow, FPS look / pointer lock |
 | `@arcane-engine/physics` | Rapier world, rigid bodies (fixed / dynamic / kinematic), box colliders, `raycast`, character controller |
 | `@arcane-engine/create-arcane` | scaffolds a starter project from `templates/starter` |
@@ -133,7 +135,9 @@ createSceneManager(world, scenes): SceneManager
 ### `@arcane-engine/renderer`
 
 ```ts
-createRenderer(canvas?): RendererContext
+createRenderer(canvasOrOptions?): RendererContext
+addEnvironmentLighting(ctx, options?): readonly [AmbientLight, HemisphereLight]
+addDirectionalShadowLight(ctx, options?): { light; target }
 spawnMesh(world, ctx, geometry, material, position?): Entity
 renderSystem(ctx): SystemFn
 Position
@@ -252,7 +256,9 @@ The README should stay understandable to someone who is new to browser game tool
 - Stages **1–12** of the **PRD V2** FPS track are implemented, including **`packages/server`** and **`multiplayer`** (ghost sync + relayed shoot)
 - `packages/physics`: Rapier WASM, fixed/dynamic/**kinematic** bodies, box colliders, gravity sync for dynamic bodies, **`raycast()`**, **`CharacterController`** + **`characterControllerSystem`**
 - `packages/input`: **`FPSCamera`**, **`fpsCameraSystem`**, **`fpsMovementSystem`**, **`InputState.mouseButtons`**, optional canvas + **pointer lock** in `createInputManager`
-- `examples/hello-cube`: scenes **`title`**, **`gameplay`**, **`physics`** (P), **`fps-test`** (F), **`multiplayer`** (M); **`mobileControls`** touch overlay when `pointer: coarse` or `maxTouchPoints`; `main.ts` awaits **`initPhysics()`**; root **`pnpm test`** builds **core → renderer → input → physics → server** before workspace tests
+- `examples/hello-cube`: scenes **`title`**, **`gameplay`**, **`physics`** (P), **`fps-test`** (F), **`multiplayer`** (M); textured gameplay floor/walls use the official Stage 15 workflow; gameplay also places imported `.glb` crystal props through the official Stage 16 workflow; **`mobileControls`** touch overlay when `pointer: coarse` or `maxTouchPoints`; `main.ts` awaits **`initPhysics()`**; root **`pnpm test`** builds **core → renderer → assets → input → physics → server** before workspace tests
+- Stage 14 renderer upgrade: `createRenderer()` supports background / clear color / max pixel ratio / shadow defaults, provided canvases resize correctly, and the renderer exports beginner-friendly environment + directional shadow helpers
+- Stage 15 texture pipeline + Stage 16 model loading: `@arcane-engine/assets` exports `createTextureCache()`, `loadTexture(...)`, `loadModel(...)`, `spawnModel(...)`, and `disposeAssetCache(...)`; texture and model source reuse is cached and teardown guidance is documented
 - `packages/create-arcane` and `templates/starter` verified locally
 - public package APIs documented with JSDoc
 - repo verification from root: `pnpm test`, `pnpm typecheck`, `pnpm build`

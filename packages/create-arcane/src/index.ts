@@ -4,15 +4,17 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const PROJECT_NAME_PLACEHOLDER = '__ARCANE_PROJECT_NAME__';
+const ASSETS_DEPENDENCY_PLACEHOLDER = '__ARCANE_ENGINE_ASSETS_DEPENDENCY__';
 const CORE_DEPENDENCY_PLACEHOLDER = '__ARCANE_ENGINE_CORE_DEPENDENCY__';
 const INPUT_DEPENDENCY_PLACEHOLDER = '__ARCANE_ENGINE_INPUT_DEPENDENCY__';
 const RENDERER_DEPENDENCY_PLACEHOLDER = '__ARCANE_ENGINE_RENDERER_DEPENDENCY__';
-const ARCANE_PACKAGES = ['core', 'input', 'renderer'] as const;
+const ARCANE_PACKAGES = ['assets', 'core', 'input', 'renderer'] as const;
 
 type ArcanePackageName = (typeof ARCANE_PACKAGES)[number];
 type DependencyMode = 'local' | 'published';
 
 interface DependencySpecifiers {
+  assets: string;
   core: string;
   input: string;
   renderer: string;
@@ -72,6 +74,7 @@ export async function createArcaneProject(
   const { mode, specifiers } = await resolveDependencySpecifiers(targetDir, cwd);
   await replaceTemplatePlaceholders(targetDir, {
     [PROJECT_NAME_PLACEHOLDER]: projectName,
+    [ASSETS_DEPENDENCY_PLACEHOLDER]: specifiers.assets,
     [CORE_DEPENDENCY_PLACEHOLDER]: specifiers.core,
     [INPUT_DEPENDENCY_PLACEHOLDER]: specifiers.input,
     [RENDERER_DEPENDENCY_PLACEHOLDER]: specifiers.renderer,
@@ -198,7 +201,8 @@ async function resolveDependencySpecifiers(
   const monorepoRoot = await findArcaneMonorepo(cwd) ?? await findArcaneMonorepo(path.dirname(targetDir));
 
   if (monorepoRoot) {
-    const [core, input, renderer] = await Promise.all([
+    const [assets, core, input, renderer] = await Promise.all([
+      toFileDependency(targetDir, path.join(monorepoRoot, 'packages', 'assets')),
       toFileDependency(targetDir, path.join(monorepoRoot, 'packages', 'core')),
       toFileDependency(targetDir, path.join(monorepoRoot, 'packages', 'input')),
       toFileDependency(targetDir, path.join(monorepoRoot, 'packages', 'renderer')),
@@ -207,6 +211,7 @@ async function resolveDependencySpecifiers(
     return {
       mode: 'local',
       specifiers: {
+        assets,
         core,
         input,
         renderer,
@@ -219,6 +224,7 @@ async function resolveDependencySpecifiers(
   return {
     mode: 'published',
     specifiers: {
+      assets: publishedVersion,
       core: publishedVersion,
       input: publishedVersion,
       renderer: publishedVersion,

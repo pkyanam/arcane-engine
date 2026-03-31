@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "three": "^0.169.0",
+    "@arcane-engine/assets": "__ARCANE_ENGINE_ASSETS_DEPENDENCY__",
     "@arcane-engine/core": "__ARCANE_ENGINE_CORE_DEPENDENCY__",
     "@arcane-engine/input": "__ARCANE_ENGINE_INPUT_DEPENDENCY__",
     "@arcane-engine/renderer": "__ARCANE_ENGINE_RENDERER_DEPENDENCY__"
@@ -25,6 +26,7 @@
   },
   "pnpm": {
     "overrides": {
+      "@arcane-engine/assets": "__ARCANE_ENGINE_ASSETS_DEPENDENCY__",
       "@arcane-engine/core": "__ARCANE_ENGINE_CORE_DEPENDENCY__",
       "@arcane-engine/input": "__ARCANE_ENGINE_INPUT_DEPENDENCY__",
       "@arcane-engine/renderer": "__ARCANE_ENGINE_RENDERER_DEPENDENCY__"

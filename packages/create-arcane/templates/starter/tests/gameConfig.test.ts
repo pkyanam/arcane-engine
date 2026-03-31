@@ -11,12 +11,10 @@ describe('game.config', () => {
 });
 
 describe('applyGameConfig', () => {
-  it('applies configured canvas metadata and renderer settings', () => {
-    const setClearColor = vi.fn();
+  it('applies configured canvas metadata', () => {
     const ctx = {
       renderer: {
         domElement: document.createElement('canvas'),
-        setClearColor,
       },
     } as unknown as RendererContext;
 
@@ -24,7 +22,6 @@ describe('applyGameConfig', () => {
 
     expect(ctx.renderer.domElement.id).toBe('arcane-game');
     expect(ctx.renderer.domElement.className).toBe('arcane-game-canvas');
-    expect(setClearColor).toHaveBeenCalledWith(0x0f172a);
   });
 });
 

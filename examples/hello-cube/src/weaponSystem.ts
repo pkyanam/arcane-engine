@@ -84,7 +84,7 @@ export const weaponSystem = (
 
     const meshRef = getComponent(world, target, MeshRef);
     const mesh = meshRef?.mesh;
-    if (mesh && mesh.material instanceof THREE.MeshStandardMaterial) {
+    if (mesh instanceof THREE.Mesh && mesh.material instanceof THREE.MeshStandardMaterial) {
       const restoreHex = mesh.material.color.getHex();
       mesh.material.color.setHex(0xffffff);
       addComponent(world, target, HitFlash, { restoreColorHex: restoreHex });

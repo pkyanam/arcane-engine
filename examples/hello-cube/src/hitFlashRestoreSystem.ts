@@ -13,7 +13,7 @@ export const hitFlashRestoreSystem = (): SystemFn => (world: World): void => {
     const flash = getComponent(world, entity, HitFlash)!;
     const meshRef = getComponent(world, entity, MeshRef)!;
     const mesh = meshRef.mesh;
-    if (mesh && mesh.material instanceof THREE.MeshStandardMaterial) {
+    if (mesh instanceof THREE.Mesh && mesh.material instanceof THREE.MeshStandardMaterial) {
       mesh.material.color.setHex(flash.restoreColorHex);
     }
     removeComponent(world, entity, HitFlash);

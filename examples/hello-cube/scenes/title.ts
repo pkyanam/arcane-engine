@@ -1,7 +1,14 @@
 import { addComponent, getComponent, query, registerSystem } from '@arcane-engine/core';
 import type { SystemFn, World } from '@arcane-engine/core';
 import { createInputManager, InputState } from '@arcane-engine/input';
-import { renderSystem, spawnMesh, MeshRef, Spin } from '@arcane-engine/renderer';
+import {
+  addDirectionalShadowLight,
+  addEnvironmentLighting,
+  renderSystem,
+  spawnMesh,
+  MeshRef,
+  Spin,
+} from '@arcane-engine/renderer';
 import * as THREE from 'three';
 import { spinSystem } from '../src/spinSystem.js';
 import { getGameContext } from '../src/runtime/gameContext.js';
@@ -85,17 +92,28 @@ export function setup(world: World): void {
 
   const entity = spawnMesh(world, ctx, geometry, material, { x: 0, y: 0, z: 0 });
   addComponent(world, entity, Spin, { axis: 'y', speed: 1.2 });
+  const mesh = getComponent(world, entity, MeshRef)?.mesh;
+  if (mesh) {
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+  }
 
-  const keyLight = new THREE.DirectionalLight(0xffffff, 2.6);
-  keyLight.position.set(3, 5, 6);
-  const fillLight = new THREE.HemisphereLight(0xe0f2fe, 0x020617, 1.4);
+  const environmentLights = addEnvironmentLighting(ctx, {
+    ambientIntensity: 0.25,
+    hemisphereIntensity: 1.1,
+    skyColor: 0xe0f2fe,
+    groundColor: 0x020617,
+  });
+  const shadowRig = addDirectionalShadowLight(ctx, {
+    intensity: 2.6,
+    position: { x: 3, y: 5, z: 6 },
+    shadowCameraExtent: 8,
+  });
   const accentLight = new THREE.PointLight(0x22d3ee, 10, 30);
   accentLight.position.set(-3, 2, 3);
 
-  sceneObjects = [keyLight, fillLight, accentLight];
-  for (const object of sceneObjects) {
-    ctx.scene.add(object);
-  }
+  sceneObjects = [...environmentLights, shadowRig.light, shadowRig.target, accentLight];
+  ctx.scene.add(accentLight);
 
   ctx.camera.position.set(0, 0.5, 5);
   ctx.camera.lookAt(0, 0, 0);

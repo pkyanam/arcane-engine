@@ -47,9 +47,11 @@ describe('createArcaneProject', () => {
     const indexHtml = await readFile(path.join(result.targetDir, 'index.html'), 'utf8');
 
     expect(packageJson.name).toBe('my-game');
+    expect(packageJson.dependencies['@arcane-engine/assets']).toBe('^0.1.0');
     expect(packageJson.dependencies['@arcane-engine/core']).toBe('^0.1.0');
     expect(packageJson.dependencies['@arcane-engine/input']).toBe('^0.1.0');
     expect(packageJson.dependencies['@arcane-engine/renderer']).toBe('^0.1.0');
+    expect(packageJson.pnpm.overrides['@arcane-engine/assets']).toBe('^0.1.0');
     expect(packageJson.pnpm.overrides['@arcane-engine/core']).toBe('^0.1.0');
     expect(packageJson.pnpm.overrides['@arcane-engine/input']).toBe('^0.1.0');
     expect(packageJson.pnpm.overrides['@arcane-engine/renderer']).toBe('^0.1.0');
@@ -120,14 +122,17 @@ describe('createArcaneProject', () => {
         overrides: Record<string, string>;
       };
     };
+    const expectedAssetsDependency = await expectedFileDependency(result.targetDir, path.join(repoRoot, 'packages', 'assets'));
     const expectedCoreDependency = await expectedFileDependency(result.targetDir, path.join(repoRoot, 'packages', 'core'));
     const expectedInputDependency = await expectedFileDependency(result.targetDir, path.join(repoRoot, 'packages', 'input'));
     const expectedRendererDependency = await expectedFileDependency(result.targetDir, path.join(repoRoot, 'packages', 'renderer'));
 
     expect(result.dependencyMode).toBe('local');
+    expect(packageJson.dependencies['@arcane-engine/assets']).toBe(expectedAssetsDependency);
     expect(packageJson.dependencies['@arcane-engine/core']).toBe(expectedCoreDependency);
     expect(packageJson.dependencies['@arcane-engine/input']).toBe(expectedInputDependency);
     expect(packageJson.dependencies['@arcane-engine/renderer']).toBe(expectedRendererDependency);
+    expect(packageJson.pnpm.overrides['@arcane-engine/assets']).toBe(expectedAssetsDependency);
     expect(packageJson.pnpm.overrides['@arcane-engine/core']).toBe(expectedCoreDependency);
     expect(packageJson.pnpm.overrides['@arcane-engine/input']).toBe(expectedInputDependency);
     expect(packageJson.pnpm.overrides['@arcane-engine/renderer']).toBe(expectedRendererDependency);
@@ -150,14 +155,17 @@ describe('createArcaneProject', () => {
         overrides: Record<string, string>;
       };
     };
+    const expectedAssetsDependency = await expectedFileDependency(result.targetDir, path.join(repoRoot, 'packages', 'assets'));
     const expectedCoreDependency = await expectedFileDependency(result.targetDir, path.join(repoRoot, 'packages', 'core'));
     const expectedInputDependency = await expectedFileDependency(result.targetDir, path.join(repoRoot, 'packages', 'input'));
     const expectedRendererDependency = await expectedFileDependency(result.targetDir, path.join(repoRoot, 'packages', 'renderer'));
 
     expect(result.dependencyMode).toBe('local');
+    expect(packageJson.dependencies['@arcane-engine/assets']).toBe(expectedAssetsDependency);
     expect(packageJson.dependencies['@arcane-engine/core']).toBe(expectedCoreDependency);
     expect(packageJson.dependencies['@arcane-engine/input']).toBe(expectedInputDependency);
     expect(packageJson.dependencies['@arcane-engine/renderer']).toBe(expectedRendererDependency);
+    expect(packageJson.pnpm.overrides['@arcane-engine/assets']).toBe(expectedAssetsDependency);
     expect(packageJson.pnpm.overrides['@arcane-engine/core']).toBe(expectedCoreDependency);
     expect(packageJson.pnpm.overrides['@arcane-engine/input']).toBe(expectedInputDependency);
     expect(packageJson.pnpm.overrides['@arcane-engine/renderer']).toBe(expectedRendererDependency);

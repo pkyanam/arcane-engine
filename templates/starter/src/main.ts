@@ -7,7 +7,7 @@ import { discoverScenes } from './runtime/sceneRegistry.js';
 import { configureSceneTransitions, flushSceneChange } from './runtime/sceneTransitions.js';
 
 const world = createWorld();
-const ctx = createRenderer();
+const ctx = createRenderer(gameConfig.renderer ?? {});
 
 applyGameConfig(ctx, gameConfig);
 setGameContext({ ctx, config: gameConfig });

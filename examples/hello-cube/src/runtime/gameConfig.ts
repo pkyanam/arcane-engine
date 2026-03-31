@@ -1,5 +1,5 @@
 import type { SceneManager } from '@arcane-engine/core';
-import type { RendererContext } from '@arcane-engine/renderer';
+import type { RendererContext, RendererOptions } from '@arcane-engine/renderer';
 
 export interface GameConfig {
   initialScene: string;
@@ -7,9 +7,7 @@ export interface GameConfig {
     id?: string;
     className?: string;
   };
-  renderer?: {
-    clearColor?: number;
-  };
+  renderer?: Omit<RendererOptions, 'canvas'>;
 }
 
 export function applyGameConfig(
@@ -22,10 +20,6 @@ export function applyGameConfig(
 
   if (config.canvas?.className) {
     ctx.renderer.domElement.className = config.canvas.className;
-  }
-
-  if (config.renderer?.clearColor !== undefined) {
-    ctx.renderer.setClearColor(config.renderer.clearColor);
   }
 }
 

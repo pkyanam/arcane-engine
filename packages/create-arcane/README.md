@@ -12,8 +12,8 @@ This will:
 
 - copy the starter template into `./my-game`
 - replace scaffold placeholders with your project name
-- run `pnpm install`
-- start `pnpm dev` automatically in interactive terminals
+- run `pnpm install` by default
+- start `pnpm dev` automatically only in interactive terminals
 
 ## Options
 
@@ -23,6 +23,12 @@ create-arcane <project-directory> [--no-install] [--no-start]
 
 - `--no-install`: skip `pnpm install`
 - `--no-start`: scaffold and install, but do not start the dev server
+
+## Notes
+
+- When you run the local CLI from inside this monorepo, the scaffolded project links to the local `assets`, `core`, `input`, and `renderer` packages with `file:` dependencies.
+- Outside the monorepo, it uses the published package versions instead.
+- The starter already includes `@arcane-engine/assets`, so new projects have the official texture path and the Stage 16 `.glb` model-loading path ready on day one.
 
 ## Getting Started
 

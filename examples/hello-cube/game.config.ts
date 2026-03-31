@@ -8,6 +8,8 @@ const gameConfig: GameConfig = {
   },
   renderer: {
     clearColor: 0x0f172a,
+    background: 0x0f172a,
+    maxPixelRatio: 2,
   },
 };
 

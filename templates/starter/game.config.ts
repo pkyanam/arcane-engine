@@ -7,7 +7,10 @@ const gameConfig: GameConfig = {
     className: 'arcane-game-canvas',
   },
   renderer: {
-    clearColor: 0x0f172a,
+    clearColor: 0x020617,
+    background: 0x020617,
+    maxPixelRatio: 2,
+    shadowMap: true,
   },
 };
 

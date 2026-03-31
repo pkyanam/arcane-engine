@@ -10,6 +10,9 @@ importers:
 
   examples/hello-cube:
     dependencies:
+      '@arcane-engine/assets':
+        specifier: workspace:*
+        version: link:../../packages/assets
       '@arcane-engine/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -29,6 +32,37 @@ importers:
       '@types/three':
         specifier: ^0.169.0
         version: 0.169.0
+      jsdom:
+        specifier: ^25.0.0
+        version: 25.0.1
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+      vite:
+        specifier: ^5.4.0
+        version: 5.4.21(@types/node@22.19.15)
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@22.19.15)(jsdom@25.0.1)
+
+  packages/assets:
+    dependencies:
+      '@arcane-engine/core':
+        specifier: workspace:*
+        version: link:../core
+      '@arcane-engine/renderer':
+        specifier: workspace:*
+        version: link:../renderer
+      three:
+        specifier: ^0.169.0
+        version: 0.169.0
+    devDependencies:
+      '@types/three':
+        specifier: ^0.169.0
+        version: 0.169.0
+      '@vitest/coverage-v8':
+        specifier: ^2.1.0
+        version: 2.1.9(vitest@2.1.9(@types/node@22.19.15)(jsdom@25.0.1))
       jsdom:
         specifier: ^25.0.0
         version: 25.0.1

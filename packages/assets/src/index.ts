@@ -14,6 +14,18 @@ export type {
   ModelSource,
   SpawnModelOptions,
 } from './models.js';
+export type {
+  AnimationLoopMode,
+  AnimationPlayerState,
+  PlayAnimationOptions,
+  StopAnimationOptions,
+} from './animations.js';
+export {
+  AnimationPlayer,
+  animationSystem,
+  playAnimation,
+  stopAnimation,
+} from './animations.js';
 export {
   createTextureCache,
   disposeAssetCache,
@@ -22,6 +34,7 @@ export {
   loadTexture,
 } from './textures.js';
 export {
+  getModelAnimationClipNames,
   loadModel,
   spawnModel,
 } from './models.js';

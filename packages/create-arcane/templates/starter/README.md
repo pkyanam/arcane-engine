@@ -15,7 +15,7 @@ pnpm dev
 - `scenes/title.ts` shows the title scene
 - `scenes/gameplay.ts` shows a controllable cube with scene transitions
 - `src/runtime/*` contains the small file-convention runtime helpers
-- `@arcane-engine/assets` is already installed for texture and model loading when you want it
+- `@arcane-engine/assets` is already installed for texture, model, and imported-animation loading when you want it
 
 Press `Enter` on the title scene to switch into gameplay, then use `WASD` or the arrow keys to move.
 Press `Escape` in gameplay to return to the title scene.
@@ -73,3 +73,31 @@ disposeAssetCache(assetCache);
 ```
 
 `spawnModel(...)` clones the cached source each time, so you can place the same prop more than once without reloading the file.
+
+## Add An Animated Model
+
+Animated imported models use the same load and spawn path as static props.
+
+```ts
+import {
+  animationSystem,
+  createTextureCache,
+  loadModel,
+  playAnimation,
+  spawnModel,
+} from '@arcane-engine/assets';
+import { registerSystem } from '@arcane-engine/core';
+import modelUrl from './assets/beacon.gltf?url';
+
+const assetCache = createTextureCache();
+const beacon = await loadModel(assetCache, modelUrl);
+const beaconEntity = spawnModel(world, ctx, beacon, {
+  position: { x: 0, y: 1.2, z: -3 },
+  scale: 1.5,
+});
+
+registerSystem(world, animationSystem());
+playAnimation(world, beaconEntity, 'Idle', { loop: 'repeat' });
+```
+
+If the imported model has clips, `spawnModel(...)` adds an `AnimationPlayer` automatically. Use `playAnimation(...)` again later to switch to another named clip with a small fade.

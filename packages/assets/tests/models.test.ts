@@ -56,7 +56,7 @@ describe('loadModel', () => {
     const cache = createTextureCache();
 
     await expect(loadModel(cache, '/models/crystal.obj')).rejects.toThrow(
-      'loadModel: only .gltf and .glb sources are supported in Stage 16',
+      'loadModel: only .gltf and .glb sources are supported',
     );
   });
 

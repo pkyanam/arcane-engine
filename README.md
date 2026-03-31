@@ -4,7 +4,7 @@
 
 We are **building in public** — the repo lives on GitHub, and we share progress openly (say hi on X if you try it). Perfect is not the goal; **clear and learnable** is.
 
-**Status (March 2026):** **V2.0 shipped**, **Stage 13: V2 Polish + Docs Sync is complete**, **Stage 14: Renderer Upgrade for Real Assets is complete**, **Stage 15: Texture Pipeline is complete**, and **Stage 16: 3D Model Loading is complete**. PRD Stages **1–12** are complete in code and tests (`hello-cube`: **F** fps-test, **M** multiplayer, touch overlay on phones). The next default V3 task is **Stage 17: Animation Playback**. Roadmap tables: [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) and [`ARCANE_ENGINE_PRD_V3.md`](./ARCANE_ENGINE_PRD_V3.md). **Release `v0.2.0`:** see [`CHANGELOG.md`](./CHANGELOG.md). *#BuildInPublic*
+**Status (March 2026):** **V2.0 shipped**, **Stage 13: V2 Polish + Docs Sync is complete**, **Stage 14: Renderer Upgrade for Real Assets is complete**, **Stage 15: Texture Pipeline is complete**, **Stage 16: 3D Model Loading is complete**, and **Stage 17: Animation Playback is complete**. PRD Stages **1–12** are complete in code and tests (`hello-cube`: **F** fps-test, **M** multiplayer, touch overlay on phones). The next default V3 task is **Stage 18: Gameplay Primitives Extraction**. Roadmap tables: [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) and [`ARCANE_ENGINE_PRD_V3.md`](./ARCANE_ENGINE_PRD_V3.md). **Release `v0.2.0`:** see [`CHANGELOG.md`](./CHANGELOG.md). *#BuildInPublic*
 
 ---
 
@@ -50,12 +50,12 @@ If the PRD’s checklist table ever looks stale, **the code and tests win**.
 |------|-------------|
 | `@arcane-engine/core` | ECS world, entities, components, queries, systems, game loop, scene manager |
 | `@arcane-engine/renderer` | Three.js setup, renderer defaults, environment/shadow lighting helpers, render system, transform components, `spawnMesh` helper |
-| `@arcane-engine/assets` | Texture loading, glTF / GLB loading, explicit cache reuse, `spawnModel`, and Vite-friendly asset imports |
+| `@arcane-engine/assets` | Texture loading, glTF / GLB loading, explicit cache reuse, `spawnModel`, imported-model animation playback, and Vite-friendly asset imports |
 | `@arcane-engine/input` | Keyboard + mouse input, orbit follow camera, FPS look, pointer lock, shared `InputState` |
 | `@arcane-engine/physics` | Rapier init/context, fixed/dynamic/kinematic bodies, box colliders, `raycast`, character controller |
 | `@arcane-engine/server` | Small Node WebSocket relay for up to 4 multiplayer clients |
-| `hello-cube` example | Title, gameplay, textured floor/walls, imported `.glb` props, physics, FPS, multiplayer, HUD, respawn, touch overlay |
-| Starter template | Title + gameplay scenes, runtime helpers, assets package dependency, and tiny texture + model doc paths via `create-arcane` |
+| `hello-cube` example | Title, gameplay, textured floor/walls, imported props, animated imported beacon, physics, FPS, multiplayer, HUD, respawn, touch overlay |
+| Starter template | Title + gameplay scenes, runtime helpers, assets package dependency, and tiny texture + model + animation doc paths via `create-arcane` |
 
 ---
 
@@ -111,6 +111,23 @@ The beginner-friendly mental model is:
 2. load it once with `loadModel(...)`
 3. call `spawnModel(...)` anywhere you want a cloned prop
 4. dispose the same scene-local asset cache during teardown
+
+## Animation Workflow
+
+Stage 17 keeps imported-model animation small and explicit.
+
+- `spawnModel(...)` automatically adds an `AnimationPlayer` when the model has clips
+- `animationSystem()` advances mixers each tick
+- `playAnimation(world, entity, 'ClipName', options?)` switches clips by name with repeat / once / ping-pong loop presets
+- `stopAnimation(world, entity, options?)` stops the current clip immediately or with a fade
+
+The beginner-friendly mental model is:
+
+1. import an animated `.glb` or `.gltf`
+2. load it with `loadModel(...)`
+3. `spawnModel(...)` it into the world
+4. register `animationSystem()`
+5. call `playAnimation(...)` with the clip name you want
 
 ---
 

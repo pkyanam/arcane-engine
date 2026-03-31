@@ -6,7 +6,7 @@ Arcane Engine is intentionally small. Contributions should make the framework ea
 
 - Read `AGENTS.md` before changing code or adding files.
 - For shipped scope, read **`ARCANE_ENGINE_PRD_V2.md`** (V2 track is complete; §10 is post-V2 guidance).
-- For the current default follow-up scope, read **`ARCANE_ENGINE_PRD_V3.md`** starting at **Stage 17: Animation Playback**.
+- For the current default follow-up scope, read **`ARCANE_ENGINE_PRD_V3.md`** starting at **Stage 18: Gameplay Primitives Extraction**.
 - Keep work aligned with **CONTRIBUTING** / **AGENTS** and avoid scope in **PRD §1.3** unless explicitly requested.
 - Prefer small, reviewable changes over broad framework expansion.
 

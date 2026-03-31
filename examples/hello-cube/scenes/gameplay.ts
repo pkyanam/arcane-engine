@@ -1,8 +1,10 @@
 import {
+  animationSystem,
   createTextureCache,
   disposeAssetCache,
   loadModel,
   loadTexture,
+  playAnimation,
   spawnModel,
   type AssetCache,
   type TextureLoadContext,
@@ -27,6 +29,7 @@ import {
   spawnMesh,
 } from '@arcane-engine/renderer';
 import * as THREE from 'three';
+import animatedBeaconModelUrl from '../src/assets/arcane-beacon.gltf?url';
 import floorTextureUrl from '../src/assets/gameplay-floor.svg';
 import wallTextureUrl from '../src/assets/gameplay-wall.svg';
 import crystalModelUrl from '../src/assets/arcane-crystal.glb?url';
@@ -42,6 +45,8 @@ let geometries: THREE.BufferGeometry[] = [];
 let materials: THREE.Material[] = [];
 let textureCache: AssetCache | undefined;
 let assetLoadGeneration = 0;
+let animatedBeaconEntity: number | undefined;
+let animatedBeaconClip: 'Idle' | 'Activate' | undefined;
 
 const FLOATING_CUBE_COUNT = 20;
 const FLOATING_AXIS_OPTIONS: Array<'x' | 'y' | 'z'> = ['x', 'y', 'z'];
@@ -57,6 +62,13 @@ const IMPORTED_PROP_LAYOUT = [
   { x: -6, y: 1.05, z: 14, rotationY: -0.45, scale: 0.95 },
   { x: 16, y: 1.45, z: 8, rotationY: 0.7, scale: 1.5 },
 ];
+const ANIMATED_BEACON_LAYOUT = {
+  x: 0,
+  y: 1.15,
+  z: -8,
+  scale: 1.8,
+};
+const BEACON_TRIGGER_DISTANCE = 7.5;
 
 const gameplaySceneSystem: SystemFn = (world: World): void => {
   for (const entity of query(world, [InputState])) {
@@ -83,7 +95,39 @@ const gameplayHudSystem: SystemFn = (world: World): void => {
     '<strong>Gameplay Demo</strong>' +
     `<span>Move with WASD or arrows. ` +
     `Player x ${position.x.toFixed(1)}, z ${position.z.toFixed(1)}. ` +
-    'Textured walls and imported crystal props reuse one scene-local asset cache. Press Escape to return to the title scene.</span>';
+    'Textured walls, static crystal props, and one animated imported beacon all reuse one scene-local asset cache. Walk near the center beacon to switch it into its Activate clip. Press Escape to return to the title scene.</span>';
+};
+
+const animatedBeaconSystem: SystemFn = (world: World): void => {
+  if (animatedBeaconEntity === undefined) {
+    return;
+  }
+
+  const controlled = query(world, [Controllable, Position]);
+  if (!controlled.length) {
+    return;
+  }
+
+  const playerPosition = getComponent(world, controlled[0]!, Position);
+  const beaconPosition = getComponent(world, animatedBeaconEntity, Position);
+  if (!playerPosition || !beaconPosition) {
+    return;
+  }
+
+  const dx = playerPosition.x - beaconPosition.x;
+  const dz = playerPosition.z - beaconPosition.z;
+  const isNearby = Math.hypot(dx, dz) <= BEACON_TRIGGER_DISTANCE;
+  const nextClip: 'Idle' | 'Activate' = isNearby ? 'Activate' : 'Idle';
+
+  if (nextClip === animatedBeaconClip) {
+    return;
+  }
+
+  playAnimation(world, animatedBeaconEntity, nextClip, {
+    fadeDuration: 0.22,
+    loop: nextClip === 'Activate' ? 'ping-pong' : 'repeat',
+  });
+  animatedBeaconClip = nextClip;
 };
 
 function randomRange(min: number, max: number): number {
@@ -166,7 +210,10 @@ async function loadGameplayModels(
   generation: number,
 ): Promise<void> {
   try {
-    const crystalAsset = await loadModel(cache, crystalModelUrl);
+    const [crystalAsset, animatedBeaconAsset] = await Promise.all([
+      loadModel(cache, crystalModelUrl),
+      loadModel(cache, animatedBeaconModelUrl),
+    ]);
 
     if (generation !== assetLoadGeneration || textureCache !== cache) {
       return;
@@ -183,6 +230,21 @@ async function loadGameplayModels(
         setRootShadows(root);
       }
     }
+
+    animatedBeaconEntity = spawnModel(world, ctx, animatedBeaconAsset, {
+      position: {
+        x: ANIMATED_BEACON_LAYOUT.x,
+        y: ANIMATED_BEACON_LAYOUT.y,
+        z: ANIMATED_BEACON_LAYOUT.z,
+      },
+      scale: ANIMATED_BEACON_LAYOUT.scale,
+    });
+    const beaconRoot = getComponent(world, animatedBeaconEntity, MeshRef)?.mesh;
+    if (beaconRoot) {
+      setRootShadows(beaconRoot);
+    }
+    playAnimation(world, animatedBeaconEntity, 'Idle', { loop: 'repeat' });
+    animatedBeaconClip = 'Idle';
   } catch (error) {
     if (generation === assetLoadGeneration) {
       console.warn('Arcane Engine gameplay model load failed.', error);
@@ -194,6 +256,8 @@ export function setup(world: World): void {
   const { ctx } = getGameContext();
 
   inputHandle = createInputManager(world);
+  animatedBeaconEntity = undefined;
+  animatedBeaconClip = undefined;
   textureCache = createTextureCache();
   const textureCtx = {
     ...ctx,
@@ -362,6 +426,8 @@ export function setup(world: World): void {
   registerSystem(world, gameplaySceneSystem);
   registerSystem(world, floatingMotionSystem);
   registerSystem(world, spinSystem);
+  registerSystem(world, animatedBeaconSystem);
+  registerSystem(world, animationSystem());
   registerSystem(world, gameplayHudSystem);
   registerSystem(world, cameraFollowSystem(ctx, { radius: 9, initialPitch: 0.42 }));
   registerSystem(world, renderSystem(ctx));
@@ -370,6 +436,8 @@ export function setup(world: World): void {
 export function teardown(world: World): void {
   const { ctx } = getGameContext();
   assetLoadGeneration += 1;
+  animatedBeaconEntity = undefined;
+  animatedBeaconClip = undefined;
 
   inputHandle?.dispose();
   inputHandle = undefined;

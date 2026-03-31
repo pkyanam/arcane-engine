@@ -6,19 +6,19 @@ All notable changes to this project are documented here. The format is based on 
 
 ### Added
 
-- **`@arcane-engine/assets`**: Stage 16 model loading via `loadModel(cache, source)` and `spawnModel(world, ctx, modelAsset, options?)`.
-- **`examples/hello-cube`**: imported `.glb` crystal props in gameplay, including multiple spawned instances from one loaded model source.
-- **`packages/assets`** tests for model caching, clone/spawn behavior, disposal, and Stage 16 failure handling.
+- **`@arcane-engine/assets`**: Stage 17 animation playback via `AnimationPlayer`, `animationSystem()`, `playAnimation(...)`, `stopAnimation(...)`, and `getModelAnimationClipNames(...)`.
+- **`examples/hello-cube`**: imported animated beacon in gameplay with a simple distance-driven clip switch between `Idle` and `Activate`.
+- **`packages/assets`** tests for animation clip names, playback controls, fades, and failure handling.
 
 ### Changed
 
-- **`AssetCache`** now covers model source reuse as well as textures.
-- **`MeshRef`** can point at a Three.js object root, not only a single mesh, so ECS transforms can move imported model roots cleanly.
+- **`spawnModel(...)`** now auto-attaches an `AnimationPlayer` when the loaded model includes clips, while keeping the same Stage 16 load-once, spawn-many workflow.
+- **Starter docs** and **package docs** now include the “drop in an animated `.glb` / `.gltf`, register `animationSystem()`, play a named clip” path.
 
 ### Docs
 
-- Root docs, agent docs, package READMEs, and starter docs now describe Stage 16 as shipped and point the default next step at **Stage 17: Animation Playback**.
-- Added a new **Stage 17** handoff prompt for the next work session.
+- Root docs, agent docs, package READMEs, and starter docs now describe Stage 17 as shipped and point the default next step at **Stage 18: Gameplay Primitives Extraction**.
+- **PRD V3** now marks Stage 17 complete and records the shipped animation workflow.
 
 ## [0.2.0] — 2026-03-27
 

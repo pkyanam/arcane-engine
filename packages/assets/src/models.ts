@@ -4,6 +4,7 @@ import { MeshRef, Position, Rotation, Scale, type RendererContext, type Vector3L
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkeletonRoot } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { AnimationPlayer } from './animations.js';
 import {
   assertAssetCacheNotDisposed,
   getAssetCacheState,
@@ -48,7 +49,13 @@ export interface SpawnModelOptions {
 interface ModelAssetState {
   disposed: boolean;
   readonly template: THREE.Object3D;
+  readonly clipEntries: ReadonlyArray<ModelClipEntry>;
   readonly dispose: () => void;
+}
+
+interface ModelClipEntry {
+  readonly name: string;
+  readonly clip: THREE.AnimationClip;
 }
 
 const modelAssetStates = new WeakMap<ModelAsset, ModelAssetState>();
@@ -79,7 +86,7 @@ export async function loadModel(
       assertAssetCacheNotDisposed(state, 'loadModel');
 
       const template = gltf.scene;
-      const asset = createModelAsset(resolvedSource, template);
+      const asset = createModelAsset(resolvedSource, template, gltf.animations ?? []);
       registerCacheDisposeCallback(state, () => disposeModelAsset(asset));
 
       if (state.disposed) {
@@ -99,12 +106,20 @@ export async function loadModel(
 }
 
 /**
+ * List the normalized animation clip names available on a loaded model asset.
+ */
+export function getModelAnimationClipNames(modelAsset: ModelAsset): string[] {
+  return getModelAssetState(modelAsset).clipEntries.map(({ name }) => name);
+}
+
+/**
  * Clone a loaded model into the scene, attach the usual transform components,
  * and return the new entity ID.
  *
  * The spawned ECS entity controls an outer root object. That keeps the model's
  * authored internal transforms intact while still letting the render system
- * move, rotate, and scale the whole prop.
+ * move, rotate, and scale the whole prop. If the source model has animation
+ * clips, `spawnModel()` also attaches `AnimationPlayer` automatically.
  */
 export function spawnModel(
   world: World,
@@ -120,19 +135,40 @@ export function spawnModel(
   const entity = createEntity(world);
   const root = new THREE.Group();
   root.name = `${state.template.name || 'ArcaneModel'}Root`;
-  root.add(cloneSkeletonRoot(state.template));
+  const clonedModel = cloneSkeletonRoot(state.template);
+  root.add(clonedModel);
 
   addComponent(world, entity, Position, options.position ?? {});
   addComponent(world, entity, Rotation, resolveVector3Like(options.rotation, 0));
   addComponent(world, entity, Scale, resolveScale(options.scale));
   addComponent(world, entity, MeshRef, { mesh: root });
 
+  if (state.clipEntries.length > 0) {
+    const mixer = new THREE.AnimationMixer(clonedModel);
+    const actions = Object.fromEntries(
+      state.clipEntries.map(({ name, clip }) => [name, mixer.clipAction(clip)]),
+    ) as Record<string, THREE.AnimationAction>;
+
+    addComponent(world, entity, AnimationPlayer, {
+      root: clonedModel,
+      mixer,
+      clipNames: state.clipEntries.map(({ name }) => name),
+      actions,
+      currentClip: null,
+      pendingStopDurations: {},
+    });
+  }
+
   ctx.scene.add(root);
 
   return entity;
 }
 
-function createModelAsset(source: string, template: THREE.Object3D): ModelAsset {
+function createModelAsset(
+  source: string,
+  template: THREE.Object3D,
+  clips: THREE.AnimationClip[],
+): ModelAsset {
   const asset: ModelAsset = {
     kind: 'arcane-model-asset',
     source,
@@ -141,6 +177,7 @@ function createModelAsset(source: string, template: THREE.Object3D): ModelAsset 
   modelAssetStates.set(asset, {
     disposed: false,
     template,
+    clipEntries: normalizeClipEntries(clips),
     dispose: () => {
       disposeModelObjectResources(template);
     },
@@ -174,11 +211,13 @@ function resolveModelSource(source: ModelSource): string {
 function assertSupportedModelSource(source: string): void {
   const normalized = source.split(/[?#]/, 1)[0]?.toLowerCase() ?? '';
   if (!normalized.endsWith('.gltf') && !normalized.endsWith('.glb')) {
-    throw new Error('loadModel: only .gltf and .glb sources are supported in Stage 16');
+    throw new Error('loadModel: only .gltf and .glb sources are supported');
   }
 }
 
-async function loadBaseModel(source: string): Promise<{ scene: THREE.Group }> {
+async function loadBaseModel(
+  source: string,
+): Promise<Awaited<ReturnType<GLTFLoader['loadAsync']>>> {
   const loader = new GLTFLoader();
   return loader.loadAsync(source);
 }
@@ -247,4 +286,34 @@ function collectMaterialTextures(
       textures.add(value);
     }
   }
+}
+
+function normalizeClipEntries(clips: THREE.AnimationClip[]): ModelClipEntry[] {
+  const entries: ModelClipEntry[] = [];
+  const usedNames = new Set<string>();
+
+  for (let index = 0; index < clips.length; index += 1) {
+    const clip = clips[index]!;
+    const baseName = clip.name.trim() || `Clip ${index + 1}`;
+    const name = uniquifyClipName(baseName, usedNames);
+    entries.push({ name, clip });
+  }
+
+  return entries;
+}
+
+function uniquifyClipName(baseName: string, usedNames: Set<string>): string {
+  if (!usedNames.has(baseName)) {
+    usedNames.add(baseName);
+    return baseName;
+  }
+
+  let suffix = 2;
+  while (usedNames.has(`${baseName} ${suffix}`)) {
+    suffix += 1;
+  }
+
+  const uniqueName = `${baseName} ${suffix}`;
+  usedNames.add(uniqueName);
+  return uniqueName;
 }

@@ -28,7 +28,7 @@ create-arcane <project-directory> [--no-install] [--no-start]
 
 - When you run the local CLI from inside this monorepo, the scaffolded project links to the local `assets`, `core`, `input`, and `renderer` packages with `file:` dependencies.
 - Outside the monorepo, it uses the published package versions instead.
-- The starter already includes `@arcane-engine/assets`, so new projects have the official texture path and the Stage 16 `.glb` model-loading path ready on day one.
+- The starter already includes `@arcane-engine/assets`, so new projects have the official texture path, the Stage 16 `.glb` / `.gltf` model-loading path, and the Stage 17 imported-animation playback path ready on day one.
 
 ## Getting Started
 

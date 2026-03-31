@@ -350,6 +350,8 @@ to animation playback:
 
 ## 9. Stage 17 — Animation Playback
 
+**Status:** ✅ Complete.
+
 ### Goal
 
 If a loaded model includes animation clips, the engine can play them in a simple, explicit way.
@@ -385,6 +387,18 @@ Out of scope:
 - `hello-cube` includes at least one animated imported model
 - a clip can be switched by gameplay state
 - the API remains small enough for a coding agent to use from docs alone
+
+### Completion notes
+
+Stage 17 extended the Stage 16 model path without turning it into an animation
+graph product:
+
+- `packages/assets` now exports `AnimationPlayer`, `animationSystem()`, `playAnimation(...)`, `stopAnimation(...)`, and `getModelAnimationClipNames(...)`
+- `spawnModel(...)` automatically attaches an `AnimationPlayer` when the loaded model includes clips
+- clip playback supports named selection, repeat / once / ping-pong loops, and small explicit fades between clips
+- `hello-cube` gameplay now includes an imported animated beacon that switches between `Idle` and `Activate` based on player distance
+- starter and package docs now include the “drop in an animated `.glb` / `.gltf`, spawn it, register `animationSystem()`, play a named clip” path
+- Stage 18 gameplay extraction is still intentionally separate
 
 ---
 
@@ -590,7 +604,7 @@ Ship V3 as a coherent release instead of a pile of loosely connected features.
 | 14 | Renderer Upgrade for Real Assets | ✅ complete | lighting, color, shadows, renderer defaults |
 | 15 | Texture Pipeline | ✅ complete | texture loading, cache, material helpers |
 | 16 | 3D Model Loading | ✅ complete | glTF/GLB support, model spawn helpers |
-| 17 | Animation Playback | proposed | clip playback for imported models |
+| 17 | Animation Playback | ✅ complete | clip playback for imported models |
 | 18 | Gameplay Primitives Extraction | proposed | promote proven reusable gameplay pieces |
 | 19 | Prefabs, Scene Assets, and Preload Flow | proposed | manifests, preloading, repeated props |
 | 20 | Multiplayer Feel Polish | proposed | smoothing, connection UX |

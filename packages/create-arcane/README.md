@@ -1,6 +1,6 @@
-# `@arcane-engine/create-arcane`
+# @arcane-engine/create-arcane
 
-CLI scaffolder for Arcane Engine starter projects.
+CLI for starting a new Arcane Engine project.
 
 ## Usage
 
@@ -9,12 +9,23 @@ npx @arcane-engine/create-arcane my-game
 npx @arcane-engine/create-arcane my-game --template asset-ready
 ```
 
-This will:
+It will:
 
-- copy the requested template into `./my-game`
-- replace scaffold placeholders with your project name
+- copy the chosen template
+- replace the project name placeholders
 - run `pnpm install` by default
-- start `pnpm dev` automatically only in interactive terminals
+- start `pnpm dev` automatically in interactive terminals
+
+## Templates
+
+- `starter`: the smallest readable Arcane Engine app
+- `asset-ready`: a starter that already shows textures, models, animation, and preload flow
+
+Choose like this:
+
+- want to learn the basics first: use `starter`
+- want imported assets from the beginning: use `asset-ready`
+- want FPS or multiplayer patterns: start from `hello-cube`, not from a template
 
 ## Options
 
@@ -26,23 +37,15 @@ create-arcane <project-directory> [options]
 - `--no-install`: skip `pnpm install`
 - `--no-start`: scaffold and install, but do not start the dev server
 
-## Templates
+## Local Monorepo Note
 
-- `starter`: minimal ECS + scene-transition baseline
-- `asset-ready`: Stage 15-19 walkthrough with preload, textures, imported props, and an animated imported beacon
+When you run the CLI from inside this repo, generated projects link to the local workspace packages with `file:` dependencies.
 
-## Notes
+Outside the monorepo, generated projects use the published package versions instead.
 
-- When you run the local CLI from inside this monorepo, the scaffolded project links to the local `assets`, `core`, `input`, and `renderer` packages with `file:` dependencies.
-- Outside the monorepo, it uses the published package versions instead.
-- Both shipped templates already include `@arcane-engine/assets`, so new projects have the official texture path, the Stage 16 `.glb` / `.gltf` model-loading path, the Stage 17 imported-animation playback path, and the Stage 19 named scene-manifest preload path ready on day one.
-- Stage 18 kept FPS gameplay helpers example-local on purpose. If you want the shipped FPS baseline, copy from `examples/hello-cube/src/fpsSceneRuntime.ts` and `examples/hello-cube/src/fpsPlayerSetup.ts` instead of expecting a generated `packages/gameplay` dependency.
-- The generated runtime also supports an optional scene `preload()` export, so apps can preload assets before sync `setup(world)` without changing the core scene API.
-- Shipped runtimes load scene modules on demand, so heavier scenes stay out of the initial bundle until the player enters them.
+## After Scaffolding
 
-## Getting Started
-
-If you skip install or start, run these commands manually:
+If you skip auto-start:
 
 ```sh
 cd my-game

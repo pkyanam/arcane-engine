@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format is based on 
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-04-01
+
+### Changed
+
+- Rewrote the root docs and package READMEs to focus on the working engine instead of historical roadmap stages.
+- Added new beginner-focused READMEs for `@arcane-engine/core`, `@arcane-engine/input`, and `examples/hello-cube`.
+- Simplified template and scaffolder docs around the three real onboarding paths: `starter`, `asset-ready`, and `hello-cube`.
+- Updated agent and contributor docs to treat `PRDs/` as historical background and point contributors at the code, tests, and shipped docs first.
+
 ### Added
 
 - **`examples/hello-cube`**: `ensurePhysicsReady()` plus scene-level physics preloads so Rapier loads when physics-backed scenes are entered instead of during app boot.

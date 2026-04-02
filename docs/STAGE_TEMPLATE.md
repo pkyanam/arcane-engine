@@ -1,65 +1,70 @@
-# Arcane Engine Stage Template
+# Arcane Engine Task Brief Template
 
-Use this when writing the next PRD stage, handoff prompt, or agent kickoff.
+This file keeps its old filename for compatibility, but you should now use it as a general task brief template.
 
-## Stage Summary
+## Task Summary
 
-- Stage number and name:
-- Goal:
-- Why this stage exists:
-- Current shipped baseline this stage builds on:
+- task name:
+- user outcome:
+- why this work matters:
+- current shipped behavior:
 
 ## Read First
 
-List the exact files to read before editing, in order.
+List the exact files to read before editing.
 
-1. `AGENTS.md`
-2. `README.md`
-3. `CONTRIBUTING.md`
-4. stage-specific files
+1. `README.md`
+2. `AGENTS.md`
+3. area-specific README
+4. source files
+5. tests
 
 ## In Scope
 
 - one sentence per deliverable
-- keep deliverables concrete and testable
+- keep each deliverable concrete and testable
 
 ## Explicitly Out Of Scope
 
-- ideas that are tempting but should wait
-- package moves that are not yet justified
-- future-stage polish or release work
+- tempting extras
+- new abstractions not needed for this task
+- future ideas unrelated to the current user problem
 
-## Existing Constraints
+## Constraints
 
 - package boundaries that must stay intact
-- source-of-truth files and generated mirrors
-- starter/example expectations
-- docs or tests that must stay aligned
+- source-of-truth files and mirrored files
+- example or template expectations
+- docs and tests that must stay aligned
 
 ## Suggested Approach
 
-1. Inspect the real current implementation first.
-2. Choose the smallest stable shape that solves the stage goal.
-3. Implement the main user-facing path before adding optional polish.
-4. Update tests and docs for every public-facing change.
-5. Verify from the repo root:
-   - `pnpm test`
-   - `pnpm typecheck`
-   - `pnpm build`
-6. Verify any scaffolded or generated output directly when the stage changes templates or examples.
+1. inspect the existing implementation first
+2. choose the smallest stable shape that solves the task
+3. implement the main user-facing path before optional polish
+4. update tests and docs for public-facing changes
+5. verify with the right local checks
+
+## Verification
+
+Use the smallest useful set:
+
+- `pnpm test`
+- `pnpm typecheck`
+- `pnpm build`
+- targeted app or package checks
 
 ## Definition Of Done
 
-- user-facing outcome is implemented
+- user-facing outcome works
 - docs match the code
-- tests cover new public behavior
+- tests cover the changed behavior
 - package boundaries still make sense
-- final summary explains what changed, what stayed local, and what still waits for the next stage
+- templates and mirrors stay in sync
 
 ## Final Summary Checklist
 
-- what baseline from the previous stage stayed in place
-- what new path was shipped
-- why the scope stopped where it did
-- how templates/examples/docs stay in sync
-- what should wait for the next stage
+- what changed
+- what stayed intentionally local
+- what docs were updated
+- what verification was run

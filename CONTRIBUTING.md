@@ -1,20 +1,28 @@
 # Contributing
 
-Arcane Engine is intentionally small. Contributions should make the framework easier to learn, easier to extend, and easier for AI agents to modify safely.
+Arcane Engine is meant to stay small, readable, and easy to teach.
 
-## Start Here
+If you contribute here, the best changes usually make one of these better:
 
-- Read `AGENTS.md` before changing code or adding files.
-- For shipped scope, read **`ARCANE_ENGINE_PRD_V2.md`** (V2 track is complete; §10 is post-V2 guidance).
-- For the shipped post-V2 roadmap, read **`ARCANE_ENGINE_PRD_V3.md`** with **Stage 23** marked complete; anything beyond it should be framed as a future-PRD conversation.
-- For new stage prompts, start from **`docs/STAGE_TEMPLATE.md`** instead of rewriting the same structure from scratch.
-- For multi-agent task splitting and package-boundary decisions, use **`docs/AGENT_WORKFLOW.md`**.
-- Keep work aligned with **CONTRIBUTING** / **AGENTS** and avoid scope in **PRD §1.3** unless explicitly requested.
-- Prefer small, reviewable changes over broad framework expansion.
+- easier to start
+- easier to understand
+- easier to extend
+- easier to modify safely with an AI coding agent
+
+## Read First
+
+Before editing:
+
+1. read `README.md`
+2. read `AGENTS.md`
+3. read the README for the package, template, or example you are touching
+4. inspect the real code and tests in that area
+
+Treat `PRDs/` as historical background, not as the current requirements document.
 
 ## Local Workflow
 
-Install dependencies and run the verification commands from the repo root:
+From the repo root:
 
 ```sh
 pnpm install
@@ -23,67 +31,94 @@ pnpm typecheck
 pnpm build
 ```
 
-If you touch the example or starter flow, also run the relevant app locally with Vite.
+If you touch a template or example, also run that app locally when practical.
+
+Useful commands:
+
+```sh
+pnpm --filter hello-cube dev
+pnpm --filter @arcane-engine/server start
+```
 
 ## Coding Conventions
 
 - Use TypeScript strict mode.
 - Use `import type { ... }` for type-only imports.
-- Components must be created with `defineComponent()` and remain plain objects.
-- Systems must remain pure functions with the signature `(world: World, dt: number) => void`.
+- Components must be created with `defineComponent()` and stay plain objects.
+- Systems must stay pure functions with the signature `(world: World, dt: number) => void`.
 - `dt` is always in seconds.
-- Entity IDs are numbers, not classes or wrappers.
-- Prefer convention over configuration. If a feature can live in app code instead of a package API, keep it in app code.
+- Entity IDs are numbers.
+- Prefer clear code over clever abstraction.
 
-## File Conventions
+## Package Boundaries
 
-- `components/<name>.ts`: one exported component definition
-- `systems/<name>.ts`: one exported system function
-- `scenes/<name>.ts`: `setup(world)` plus optional `teardown(world)`
-- `game.config.ts`: initial scene and renderer defaults
+Keep each package boring and obvious:
 
-When adding framework features, preserve the existing package boundaries:
-
-- `packages/core`: ECS, queries, systems, scenes, game loop
+- `packages/core`: ECS, queries, systems, scenes, loop
 - `packages/renderer`: Three.js integration
-- `packages/assets`: texture loading, glTF / GLB loading, caching, and disposal helpers
-- `packages/input`: DOM input bridge and input-focused systems
-- `packages/physics`: Rapier integration, colliders, raycast, character controller
-- `packages/server`: Node-only multiplayer relay
+- `packages/assets`: texture/model loading, animation, preload, disposal
+- `packages/input`: DOM input bridge and input-driven systems
+- `packages/physics`: Rapier integration
+- `packages/server`: relay only
 - `packages/create-arcane`: scaffolding
 
-## Releases (#BuildInPublic)
+If a helper only serves `hello-cube`, keep it in `examples/hello-cube` unless a second shipped path clearly needs it.
 
-- Tag milestones from the repo root (e.g. `git tag -a v0.2.0 -m "V2.0: multiplayer + mobile demo UI"`).
-- Summarize user-facing changes in **`CHANGELOG.md`** before tagging.
-- `package.json` **`version`** should match the release tag for the monorepo workspace.
+## Templates And Examples
+
+- `templates/` is the source of truth for scaffold content.
+- `packages/create-arcane/templates/` mirrors those files for publishing.
+- `templates/starter` should stay as small and readable as possible.
+- `templates/asset-ready` should stay focused on asset loading, not become a second `hello-cube`.
+- `examples/hello-cube` is the place for bigger copy-from-here gameplay patterns.
 
 ## Tests And Docs
 
-- Add or update Vitest coverage for every public function you introduce.
-- Keep tests importing from `src/`, not from built `dist/`.
-- Add JSDoc for new public types and functions.
-- Update `README.md`, starter docs, or package docs when the onboarding path changes.
-- Keep package READMEs aligned with the real exported APIs; do not leave stage-specific docs behind the code.
+- Add or update Vitest coverage for public behavior you change.
+- Keep tests importing from `src/`, not `dist/`.
+- Update docs when the beginner path changes.
+- Keep package READMEs aligned with the real exports.
+- If you add or move a recommended workflow, update the relevant template/example README too.
+
+## Docs Style
+
+Assume the reader might be new to game engines.
+
+Prefer:
+
+- simple language
+- short examples
+- concrete file paths
+- one clear recommended path
+
+Avoid:
+
+- roadmap/history language in product docs
+- unexplained jargon
+- “magic” helpers that hide where the code lives
+
+## Release Hygiene
+
+- Do not commit `node_modules/`, `dist/`, or temporary scaffold folders.
+- Update `CHANGELOG.md` for user-facing changes before cutting a release.
+- Keep versioning and release notes aligned.
 
 ## Guidance For AI Agents
 
-- Re-check `AGENTS.md` and the **PRD** / **README** before making assumptions.
-- Inspect the existing implementation first; do not invent missing architecture if a lighter extension will work.
-- Avoid feature creep. Stage work should feel polished, not bigger.
-- Keep the Stage 19 preload seam small. Prefer optional scene `preload()` hooks and explicit asset manifests over hidden runtime managers.
-- Prefer example-local helpers for demo behavior instead of expanding package APIs just to support one example.
+- Re-check the touched package README before adding APIs.
+- Inspect the existing implementation before inventing a new abstraction.
+- Prefer the smallest useful change over framework growth.
+- Keep docs, tests, templates, and examples in sync.
 - Never revert unrelated user changes.
-- Do not use destructive git commands unless the user explicitly asks for them.
-- Finish the loop when possible: implement, test, typecheck, build, and summarize tradeoffs clearly.
+- Avoid destructive git commands unless explicitly requested.
 
 ## Out Of Scope By Default
 
 Do not add these unless a task explicitly asks for them:
 
-- asset pipelines
-- audio
-- UI frameworks
-- production-grade networking products beyond the **hello-cube** relay prototype (see **PRD §1.3**)
-- plugin systems
+- audio systems
+- a visual editor
+- plugin ecosystems
+- production-grade multiplayer services
+- hidden asset pipelines
 - WebGPU renderer work

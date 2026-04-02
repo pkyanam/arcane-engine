@@ -1,88 +1,77 @@
 # @arcane-engine/assets
 
-Thin asset-loading helpers for Arcane Engine.
+Beginner-friendly asset helpers for Arcane Engine.
 
-Stage 15 introduced the explicit cache and texture workflow. Stage 16 extends
-that same cache to glTF / GLB model loading. Stage 17 adds explicit animation
-playback for imported models. Stage 19 adds named scene asset manifests,
-loading-progress hooks, and a repeated-prop helper. Stage 23 tightens
-disposal coverage for cached texture variants and shared model resources
-without changing the public API shape.
+This package handles:
 
-## What it exports
+- textures
+- glTF/GLB models
+- repeated model spawning
+- imported model animation playback
+- scene preload with progress updates
+- explicit cache disposal
 
-- `createTextureCache()` to create the shared `AssetCache`
-- `loadTexture(ctx, source, options?)` to load a texture with simple wrapping, filtering, and color-space options
-- `loadModel(cache, source)` to load one glTF / GLB source once
-- `preloadSceneAssets(ctx, manifest, options?)` to load one scene manifest through one shared cache
-- `getModelAnimationClipNames(modelAsset)` to inspect the clip names on a loaded model
-- `spawnModel(world, ctx, modelAsset, options?)` to clone a loaded model into the ECS world
-- `spawnModelInstances(world, ctx, modelAsset, instances)` to place repeated props from one loaded source
-- `AnimationPlayer` for spawned animated model instances
-- `animationSystem()` to advance imported-model mixers every tick
-- `playAnimation(world, entity, clipName, options?)` for named clip playback, loop mode, and fades
-- `stopAnimation(world, entity, options?)` to stop the current clip immediately or with a fade
-- `disposeAssetCache(cache)` to release cached textures and model resources during teardown
+The main idea is simple:
 
-## Supported texture workflow
+1. load imported files once
+2. reuse them as many times as you want
+3. dispose them when the scene ends
 
-- Vite-friendly asset imports (`png`, `jpg`, `jpeg`, `webp`, `svg`, and other URL-style sources)
-- repeat or clamp wrapping
-- min / mag filtering
-- color-space presets:
-  - `'auto'` follows the renderer output color space from Stage 14
-  - `'srgb'` is the right default for color / albedo maps
-  - `'none'` is for data textures like normal, roughness, and metalness maps
+## Install
 
-## Supported model workflow
+```sh
+pnpm add @arcane-engine/assets @arcane-engine/core @arcane-engine/renderer three
+```
 
-- glTF / GLB only in Stage 16
-- Vite-friendly URL imports, usually `import modelUrl from './assets/prop.glb?url'`
-- one loaded source can be spawned more than once without reloading the file
-- `spawnModel()` clones the cached source into a wrapper root so ECS transforms
-  move the whole prop without overwriting the model's internal authored transforms
-- if the imported model has clips, `spawnModel()` also attaches `AnimationPlayer`
+## What It Exports
 
-## Supported animation workflow
+Loading and cache:
 
-- clip selection by name
-- repeat, once, and ping-pong loop modes
-- explicit `playAnimation(...)` / `stopAnimation(...)` controls
-- small readable fade transitions between clips
-- one mixer per spawned animated model instance
+- `createTextureCache()`
+- `disposeAssetCache(cache)`
+- `loadTexture(ctx, source, options?)`
+- `loadModel(cache, source)`
+- `preloadSceneAssets(ctx, manifest, options?)`
 
-## Supported scene asset workflow
+Models:
 
-- one named manifest per scene
-- one shared cache per preload pass
-- progress callbacks for a simple loading overlay
-- sync scene setup after preload finishes
-- repeated imported prop placement from one loaded model source
+- `spawnModel(world, ctx, modelAsset, options?)`
+- `spawnModelInstances(world, ctx, modelAsset, instances)`
+- `getModelAnimationClipNames(modelAsset)`
 
-## Example
+Animation:
+
+- `AnimationPlayer`
+- `animationSystem()`
+- `playAnimation(world, entity, clipName, options?)`
+- `stopAnimation(world, entity, options?)`
+
+## Recommended Workflow
+
+The easiest path is to declare one scene manifest and preload it:
 
 ```ts
 import {
   animationSystem,
   disposeAssetCache,
-  getModelAnimationClipNames,
   playAnimation,
   preloadSceneAssets,
   spawnModel,
   spawnModelInstances,
 } from '@arcane-engine/assets';
-import type { World } from '@arcane-engine/core';
 import { registerSystem } from '@arcane-engine/core';
-import type { RendererContext } from '@arcane-engine/renderer';
 import floorTextureUrl from './assets/floor.png';
 import crystalModelUrl from './assets/crystal.glb?url';
-import beaconModelUrl from './assets/beacon.glb?url';
+import beaconModelUrl from './assets/beacon.gltf?url';
 
 const manifest = {
   textures: {
     floor: {
       source: floorTextureUrl,
-      options: { repeat: { x: 8, y: 8 }, colorSpace: 'srgb' },
+      options: {
+        repeat: { x: 8, y: 8 },
+        colorSpace: 'srgb',
+      },
     },
   },
   models: {
@@ -91,62 +80,68 @@ const manifest = {
   },
 } as const;
 
-let assets: Awaited<ReturnType<typeof preloadSceneAssets>> | undefined;
+const assets = await preloadSceneAssets(ctx, manifest, {
+  onProgress(progress) {
+    console.log(progress.loaded, progress.total, progress.assetName);
+  },
+});
 
-export async function setupAssets(world: World, ctx: RendererContext): Promise<void> {
-  assets = await preloadSceneAssets(ctx, manifest, {
-    onProgress(progress) {
-      console.log(progress.loaded, progress.total, progress.assetName);
-    },
-  });
+floorMaterial.map = assets.textures.floor;
+floorMaterial.color.set(0xffffff);
+floorMaterial.needsUpdate = true;
 
-  floorMaterial.map = assets.textures.floor;
-  floorMaterial.color.set(0xffffff);
-  floorMaterial.needsUpdate = true;
+spawnModelInstances(world, ctx, assets.models.crystal, [
+  { position: { x: -4, y: 1.2, z: 0 }, scale: 1.1 },
+  { position: { x: 4, y: 1.2, z: -3 }, rotation: { y: 0.4 }, scale: 0.9 },
+]);
 
-  spawnModelInstances(world, ctx, assets.models.crystal, [
-    { position: { x: 4, y: 1.2, z: -3 }, scale: 1.25 },
-    { position: { x: -6, y: 1.2, z: 8 }, rotation: { y: 0.45 }, scale: 0.95 },
-  ]);
+const beacon = spawnModel(world, ctx, assets.models.beacon, {
+  position: { x: 0, y: 1.1, z: -5 },
+  scale: 1.5,
+});
 
-  const beaconEntity = spawnModel(world, ctx, assets.models.beacon, {
-    position: { x: 0, y: 1.1, z: -4 },
-    scale: 1.6,
-  });
+registerSystem(world, animationSystem());
+playAnimation(world, beacon, 'Idle', { loop: 'repeat' });
 
-  console.log(getModelAnimationClipNames(assets.models.beacon)); // ['Idle', 'Activate']
-
-  registerSystem(world, animationSystem());
-  playAnimation(world, beaconEntity, 'Idle', { loop: 'repeat' });
-}
-
-export function teardownAssets(): void {
-  if (assets) {
-    disposeAssetCache(assets.cache);
-    assets = undefined;
-  }
-}
+// Later, during scene teardown:
+disposeAssetCache(assets.cache);
 ```
 
-## Teardown guidance
+## Texture Notes
 
-Keep one cache per scene or loading phase.
+`loadTexture(...)` supports:
+
+- Vite-imported asset URLs
+- repeat or clamp wrapping
+- min and mag filters
+- color-space settings like `'srgb'`
+
+For most color textures, use `'srgb'`.
+
+## Model Notes
+
+- supported formats: `.gltf` and `.glb`
+- one loaded source can be spawned many times
+- `spawnModel()` adds the usual ECS transform components for you
+- if the model has animation clips, `spawnModel()` also attaches `AnimationPlayer`
+
+## Animation Notes
+
+You control imported animations by clip name:
+
+- `'repeat'` loop
+- `'once'` loop
+- `'ping-pong'` loop
+- optional fade when switching clips
+
+## Teardown Rule
+
+Keep one asset cache per scene or loading phase.
 
 When the scene ends:
 
-1. remove meshes from the Three.js scene
-2. dispose scene-local geometries and materials
-3. call `disposeAssetCache(cache)` after those objects are no longer using the textures or model resources
+1. remove scene-owned meshes from the Three.js scene
+2. dispose scene-owned materials and geometry when needed
+3. call `disposeAssetCache(cache)`
 
-That keeps Stage 19 explicit and easy to reason about. There is still no hidden preload manager.
-
-## Not in Stage 19
-
-This package still does not add:
-
-- animation state machines or blend trees
-- retargeting
-- build-time manifest generation
-- hidden asset registries or editor tooling
-
-Those stay in later V3 stages.
+That makes asset ownership easy to reason about.

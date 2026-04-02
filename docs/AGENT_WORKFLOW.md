@@ -1,15 +1,25 @@
 # Arcane Engine Agent Workflow
 
-Arcane Engine is easiest to extend when one agent owns the scope, reads the real code first, and keeps package boundaries boring.
+Arcane Engine is easiest to extend when one person or agent keeps the scope small, reads the real code first, and keeps package boundaries obvious.
 
 ## Session Start
 
 Before editing:
 
-1. Read `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, and the current PRD stage.
-2. Confirm the shipped baseline in code and tests, not just in roadmap prose.
-3. Write down the smallest version of the task that solves the user problem.
-4. State what is explicitly out of scope for this session.
+1. read `README.md`, `AGENTS.md`, and the README for the area you will touch
+2. inspect the actual source and tests
+3. write down the smallest version of the task that solves the user problem
+4. decide what is explicitly out of scope
+
+## Good Default Read Order
+
+For most tasks:
+
+1. root `README.md`
+2. package or example README
+3. package `src/index.ts`
+4. the files used by the current workflow
+5. the tests for that area
 
 ## Task Splitting By Tool
 
@@ -20,88 +30,74 @@ These are defaults, not hard rules.
 Best for:
 
 - bounded package work
-- CLI and scaffolding changes
+- template changes
 - example implementation
-- test additions and regression fixes
-- carrying a change through implementation, verification, and cleanup
-
-Good handoff shape:
-
-- one package or template path
-- exact files to inspect first
-- explicit acceptance checks
+- tests and regression fixes
+- carrying a change through implementation and verification
 
 ### Claude Code
 
 Best for:
 
-- architecture passes across multiple packages
-- docs + code alignment work
-- integration planning
-- repo-wide cleanup where several moving pieces must stay coherent
-
-Good handoff shape:
-
-- one architectural question
-- a clear scope ceiling
-- the docs and packages that must stay aligned
+- repo-wide docs alignment
+- cross-package planning
+- architecture cleanup where several areas must stay consistent
 
 ### Cursor
 
 Best for:
 
-- tight iteration inside one local area
-- fast editing and preview loops
-- refactors where the code owner wants to stay hands-on
+- tight local refactors
+- fast iteration in one file cluster
+- hands-on editing with a human nearby
 
-Good handoff shape:
+## Splitting Rules
 
-- one file cluster
-- short edit instructions
-- a narrow local verification loop
+- Split by write scope, not vague topic.
+- Give one owner the final integration pass.
+- Do not have multiple agents edit the same file unless that overlap is intentional.
+- Decide what the source of truth is before touching mirrored files.
 
-## Task Splitting Rules
+## Example-Local Vs Package-Level
 
-- Split by write scope, not by vague topic.
-- Give one agent ownership of the final integration pass.
-- Do not have multiple agents edit the same file unless the overlap is intentional and coordinated.
-- Prefer one strong scaffold path over parallel half-finished template ideas.
-- When a task touches docs, templates, and package code, decide which piece is the source of truth first.
+Keep code example-local when most of these are true:
 
-## Example-Local Vs Package-Level Checklist
-
-Keep logic example-local when most answers below are "yes":
-
-- it only serves one shipped example or template
-- the API shape is still changing while the example teaches it
+- it only serves `hello-cube`
+- the API name is still demo-specific
 - the code is easier to understand next to the scene that uses it
-- moving it into a package would force naming or abstraction choices early
-- another example or template does not clearly need the same helper yet
+- moving it to a package would hide important behavior
 
-Promote logic into a package only when most answers below are "yes":
+Promote code into a package when most of these are true:
 
-- at least two shipped paths need the same behavior
-- the API can be explained in simple public docs
-- the lifecycle and teardown rules are stable
-- the helper reduces repeated code without hiding important behavior
-- package tests are clearer than example-only tests for the feature
+- at least two shipped paths need it
+- the API can be documented simply
+- lifecycle and teardown rules are stable
+- package tests are clearer than example-only tests
 
-If the answer is "not sure," keep it local and document why.
+If you are unsure, keep it local.
 
-## Template And Scaffold Rules
+## Template Rules
 
-- `templates/` is the source of truth for scaffold content.
-- `packages/create-arcane/templates/` is the packaged mirror.
-- Prefer explicit template files over hidden CLI generation.
-- Add a new template only when it tells a meaningfully different onboarding story.
+- `templates/` is the source of truth
+- `packages/create-arcane/templates/` is the published mirror
+- when a template changes, keep the mirror in sync
+- `starter` should stay minimal
+- `asset-ready` should stay focused on asset loading
+
+## Docs Rules
+
+- write for a beginner reader first
+- prefer one recommended path over many equal options
+- explain where code lives
+- avoid roadmap language in user-facing docs
+- update READMEs when the recommended workflow changes
 
 ## End Of Session Check
 
-Before calling the work done:
+Before calling the task done:
 
-1. Did the scope expand beyond the original goal?
-2. Did any helper move into a package without two clear call sites?
-3. Do the docs explain the shipped path without sending the reader into `hello-cube` to guess?
-4. Did you run the repo checks plus any direct scaffold verification the task needed?
-
-If not, tighten the change before moving on.
+1. did the scope stay small?
+2. did any example-only helper get promoted too early?
+3. do docs match the shipped code?
+4. are templates, mirrors, and examples still aligned?
+5. did you run the right checks for the change?

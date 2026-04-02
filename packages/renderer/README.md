@@ -2,55 +2,83 @@
 
 Thin Three.js helpers for Arcane Engine scenes.
 
-## What it exports
+This package gives you:
 
-- `createRenderer()` to create a `scene`, `camera`, and `renderer`
-- transform components: `Position`, `Rotation`, `Scale`, `MeshRef`, `Spin`
-- `renderSystem(ctx)` to sync ECS transforms and submit a frame
-- `spawnMesh()` to create a mesh-backed entity quickly
-- lighting helpers:
-  - `addEnvironmentLighting()`
-  - `addDirectionalShadowLight()`
+- `createRenderer()` for scene, camera, and WebGL renderer setup
+- transform components like `Position` and `Rotation`
+- `spawnMesh()` for quick visible entities
+- `renderSystem(ctx)` to sync ECS transforms into Three.js
+- lighting helpers that make beginner scenes look decent fast
 
-## `createRenderer()` options
+## Install
 
-`createRenderer()` still supports the original calls:
-
-```ts
-const ctx = createRenderer();
-const ctx = createRenderer(canvas);
+```sh
+pnpm add @arcane-engine/renderer @arcane-engine/core three
 ```
 
-Stage 14 adds a small options object:
+## Quick Start
 
 ```ts
+import { createWorld, registerSystem } from '@arcane-engine/core';
+import {
+  createRenderer,
+  renderSystem,
+  spawnMesh,
+} from '@arcane-engine/renderer';
+import * as THREE from 'three';
+
+const world = createWorld();
 const ctx = createRenderer({
-  clearColor: 0x020617,
   background: 0x020617,
   maxPixelRatio: 2,
   shadowMap: true,
 });
+
+const geometry = new THREE.BoxGeometry(1, 1, 1);
+const material = new THREE.MeshStandardMaterial({ color: 0x38bdf8 });
+
+spawnMesh(world, ctx, geometry, material, { x: 0, y: 0, z: 0 });
+registerSystem(world, renderSystem(ctx));
 ```
 
-Available options:
+## What It Exports
 
-- `clearColor`: renderer clear color when the scene has no background
+- `createRenderer()`
+- `addEnvironmentLighting()`
+- `addDirectionalShadowLight()`
+- `renderSystem(ctx)`
+- `spawnMesh(world, ctx, geometry, material, position?)`
+- `Position`
+- `Rotation`
+- `Scale`
+- `MeshRef`
+- `Spin`
+
+## `createRenderer()` Options
+
+You can call it in three ways:
+
+```ts
+const ctx = createRenderer();
+const ctx = createRenderer(canvas);
+const ctx = createRenderer({ background: 0x020617, shadowMap: true });
+```
+
+Useful options:
+
+- `canvas`: render into your own canvas instead of auto-creating one
+- `clearColor`: fallback clear color
 - `background`: scene background color or texture
-- `maxPixelRatio`: caps `renderer.setPixelRatio()` for high-DPI screens
-- `shadowMap`: `true` for the default soft shadow setup, or an object with `enabled` / `type`
+- `maxPixelRatio`: caps pixel ratio on high-DPI screens
+- `shadowMap`: `true` for soft shadows, or an options object
 - `outputColorSpace`: defaults to `THREE.SRGBColorSpace`
 
-If you pass your own canvas, Arcane Engine now keeps the camera aspect and draw buffer in sync with that canvas on resize too.
+## Lighting Helpers
 
-## Lighting defaults for PBR materials
+Recommended beginner setup:
 
-Recommended starting point for `MeshStandardMaterial` and imported models:
-
-1. Use `addEnvironmentLighting()` for soft fill.
-2. Keep `ambientIntensity` subtle, usually around `0.2` to `0.4`.
-3. Let the hemisphere light do more of the work, usually around `0.9` to `1.4`.
-4. Add one directional key light with `addDirectionalShadowLight()` for shape and shadows.
-5. Mark important meshes with `castShadow = true` and floors or walls with `receiveShadow = true`.
+1. `addEnvironmentLighting(ctx)` for soft ambient fill
+2. `addDirectionalShadowLight(ctx)` for shape and shadows
 
 Example:
 
@@ -61,22 +89,20 @@ import {
   createRenderer,
 } from '@arcane-engine/renderer';
 
-const ctx = createRenderer({
-  background: 0x020617,
-  maxPixelRatio: 2,
-  shadowMap: true,
-});
+const ctx = createRenderer({ shadowMap: true });
 
-const [ambient, hemisphere] = addEnvironmentLighting(ctx, {
+addEnvironmentLighting(ctx, {
   ambientIntensity: 0.3,
   hemisphereIntensity: 1.1,
 });
 
-const { light, target } = addDirectionalShadowLight(ctx, {
+addDirectionalShadowLight(ctx, {
   position: { x: 8, y: 12, z: 10 },
-  shadowCameraExtent: 18,
 });
 ```
 
-The renderer still does not load textures or models by itself. Use
-`@arcane-engine/assets` for Stage 15 texture loading and Stage 16 glTF / GLB loading.
+## Notes
+
+- this package does not load textures or models
+- use [`@arcane-engine/assets`](../assets/README.md) for imported assets
+- `renderSystem(ctx)` should run after systems that change position or rotation

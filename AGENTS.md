@@ -1,332 +1,201 @@
 # Arcane Engine — Agent Instructions
 
-This file gives OpenAI Codex and other coding agents shared context about the
-Arcane Engine repo. Read it before making changes.
+This file gives coding agents the short, practical version of how this repo works.
 
----
+Read this before making changes.
 
-## Project Overview
+## What Arcane Engine Is
 
-Arcane Engine is a lightweight browser game framework.
+Arcane Engine is a lightweight browser game framework built around ECS.
 
 In plain language:
 
-- Three.js draws the 3D world
-- Arcane Engine organizes the game logic
-- the repo gives you a starter structure so you do not have to invent one each time
+- Three.js draws the world
+- Arcane Engine organizes game logic
+- the repo gives you patterns and starter structure so you do not have to invent everything first
 
-It uses an Entity Component System (ECS) plus file-based conventions.
-
-Simple mental model:
+Use this mental model:
 
 - entity = a thing in the game
-- component = data about that thing
-- system = a rule that updates things
+- component = plain data on that thing
+- system = a rule that runs every frame
 - scene = one game screen
 
-**Roadmap:** See [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) for the shipped **browser multiplayer FPS** plan (Stages 1–12), then [`ARCANE_ENGINE_PRD_V3.md`](./ARCANE_ENGINE_PRD_V3.md) for the proposed post-V2 roadmap. If either roadmap document disagrees with the repo, **trust the code and tests**.
+## Source Of Truth
 
-**Current stage:** **V2.0 is shipped**, **Stages 13–23 of PRD V3 are complete**, and the current V3 roadmap is closed out. Current shipped surface includes **`packages/assets`**, **`packages/server`**, textured **`hello-cube`** gameplay, named scene asset manifests via **`preloadSceneAssets(...)`**, repeated imported props via **`spawnModelInstances(...)`**, imported **glTF / GLB** model props via **`loadModel(...)`** / **`spawnModel(...)`**, animation playback via **`AnimationPlayer`** / **`animationSystem()`** / **`playAnimation(...)`**, shared example-local FPS helpers via **`fpsSceneRuntime`** / **`fpsPlayerSetup`**, a shared example-local **`helloCubePresentation`** scene-copy/theme helper, a clickable `hello-cube` command deck, **`multiplayer`** (**M**), **`networkSyncSystem`**, smoothed remote ghosts, relay **`join`** plus **`ping`** / **`pong`**, **`VITE_WS_URL`**, **`mobileControls`** for touch, Stage 23 lazy scene-module loading in shipped runtimes, hello-cube on-demand Rapier loading for physics scenes, the Stage 14 renderer defaults / lighting helpers, `create-arcane` template choices via **`starter`** and **`asset-ready`**, and the Stage 22 workflow docs in **`docs/`**. Hosting notes live in **README** and release notes in **CHANGELOG**.
+Trust these in this order:
 
-**Workflow docs:** Use [`docs/STAGE_TEMPLATE.md`](./docs/STAGE_TEMPLATE.md) for future stage prompts and [`docs/AGENT_WORKFLOW.md`](./docs/AGENT_WORKFLOW.md) for task splitting plus the example-local vs package-level checklist.
+1. code in `packages/`, `templates/`, and `examples/`
+2. tests
+3. current docs
 
----
+Treat `PRDs/` as historical background, not as the current product spec.
 
-## Monorepo Structure
+## Read First
+
+Start here when you need repo context:
+
+1. `README.md`
+2. `CONTRIBUTING.md`
+3. the README for the package or example you are touching
+4. the actual source and tests in that area
+
+Helpful entry points:
+
+- `packages/core/src/index.ts`
+- `packages/renderer/src/index.ts`
+- `packages/assets/src/index.ts`
+- `packages/input/src/index.ts`
+- `packages/physics/src/index.ts`
+- `packages/server/src/server.ts`
+- `examples/hello-cube/README.md`
+
+## Monorepo Map
 
 ```text
-arcane-engine/
-|- packages/
-|  |- core/           # ECS, game loop, world, scenes
-|  |- renderer/       # Three.js wrapper
-|  |- assets/         # Texture + glTF/GLB loading, caching, disposal helpers
-|  |- input/          # Keyboard/mouse, movement, orbit + FPS camera
-|  |- physics/        # Rapier: colliders, raycast, character controller
-|  |- server/          # WebSocket relay (multiplayer)
-|  `- create-arcane/  # npx CLI scaffolder
-|- templates/
-|  `- starter/        # Default generated project
-|- examples/
-|  `- hello-cube/     # title, gameplay, physics, fps-test, multiplayer
-|- README.md
-|- CONTRIBUTING.md
-|- CLAUDE.md
-|- AGENTS.md
-|- ARCANE_ENGINE_PRD_V2.md
-|- CHANGELOG.md
-`- package.json
+packages/core         ECS world, entities, components, queries, systems, loop, scenes
+packages/renderer     Three.js setup, transform components, render helpers
+packages/assets       textures, models, animation, preload, disposal
+packages/input        input state, movement, camera follow, FPS look
+packages/physics      Rapier integration
+packages/server       tiny WebSocket relay
+packages/create-arcane project scaffolder
+templates/starter     smallest generated app
+templates/asset-ready generated app with asset loading
+examples/hello-cube   full teaching example
+docs/                 workflow notes and reusable task template
+PRDs/                 historical planning docs
 ```
 
-**Package manager:** pnpm workspaces  
-**Build tool:** Vite  
-**Test framework:** Vitest  
-**Language:** TypeScript with `strict: true`
+## Current Shipped Surface
 
----
+The engine you are editing already includes:
+
+- ECS world and scene management in `@arcane-engine/core`
+- Three.js renderer setup and lighting helpers in `@arcane-engine/renderer`
+- texture loading, glTF/GLB loading, animation playback, and scene preload helpers in `@arcane-engine/assets`
+- keyboard, mouse, follow camera, FPS look, and pointer lock in `@arcane-engine/input`
+- Rapier rigid bodies, colliders, raycast, and character controller in `@arcane-engine/physics`
+- a tiny Node relay in `@arcane-engine/server`
+- scaffold templates through `@arcane-engine/create-arcane`
+- a larger copy-from-here example in `examples/hello-cube`
 
 ## Package Responsibilities
 
-| Package | Responsibility |
-|---------|----------------|
-| `@arcane-engine/core` | ECS primitives, queries, system registration, game loop, scene lifecycle |
-| `@arcane-engine/renderer` | Three.js scene/camera/renderer setup and mesh rendering helpers |
-| `@arcane-engine/assets` | Texture loading, glTF / GLB loading, scene asset manifests, loading progress hooks, repeated model spawn helpers, cache reuse, and explicit asset disposal helpers |
-| `@arcane-engine/input` | DOM input bridge, movement, camera follow, FPS look + pointer lock |
-| `@arcane-engine/physics` | Rapier world, rigid bodies, box colliders, raycast, character controller |
-| `@arcane-engine/create-arcane` | CLI that scaffolds starter projects |
-| `@arcane-engine/server` | Node **`ws`** relay for multiplayer (no simulation) |
+| Package | Owns |
+| --- | --- |
+| `@arcane-engine/core` | ECS primitives and lifecycle |
+| `@arcane-engine/renderer` | Three.js bridge and render-time components |
+| `@arcane-engine/assets` | imported assets and cache lifecycle |
+| `@arcane-engine/input` | browser input and input-driven systems |
+| `@arcane-engine/physics` | Rapier world integration |
+| `@arcane-engine/server` | WebSocket relay only |
+| `@arcane-engine/create-arcane` | scaffolding |
 
----
+Do not move example-only code into a package unless at least two shipped paths clearly need it.
 
-## Core ECS API
+## Core Rules
 
-Import from `@arcane-engine/core`.
-
-```ts
-import {
-  createWorld,
-  createEntity,
-  destroyEntity,
-  resetWorld,
-  addComponent,
-  removeComponent,
-  getComponent,
-  hasComponent,
-  defineComponent,
-  query,
-  registerSystem,
-  unregisterSystem,
-  runSystems,
-  createGameLoop,
-  createSceneManager,
-} from '@arcane-engine/core';
-```
-
-### Components
-
-Always use plain objects, never classes.
-
-```ts
-const Position = defineComponent('Position', () => ({ x: 0, y: 0, z: 0 }));
-const Velocity = defineComponent('Velocity', () => ({ vx: 0, vy: 0, vz: 0 }));
-```
-
-### Systems
-
-Systems must be pure functions:
-
-```ts
-function movementSystem(world: World, dt: number): void {
-  for (const entity of query(world, [Position, Velocity])) {
-    const position = getComponent(world, entity, Position)!;
-    const velocity = getComponent(world, entity, Velocity)!;
-    position.x += velocity.vx * dt;
-  }
-}
-```
-
-`dt` is always measured in seconds.
-
----
-
-## Renderer API
-
-Import from `@arcane-engine/renderer`.
-
-```ts
-import {
-  createRenderer,
-  addEnvironmentLighting,
-  addDirectionalShadowLight,
-  renderSystem,
-  spawnMesh,
-  Position,
-  Rotation,
-  Scale,
-  MeshRef,
-  Spin,
-} from '@arcane-engine/renderer';
-import type { RendererContext } from '@arcane-engine/renderer';
-```
-
-`createRenderer()` now also accepts renderer options for clear color, scene background, max pixel ratio, shadow map setup, and output color space.
-
-Systems that need the renderer should use a factory:
-
-```ts
-export const mySystem = (ctx: RendererContext): SystemFn => (world, dt) => {
-  // ...
-};
-```
-
----
-
-## Input API
-
-Import from `@arcane-engine/input`.
-
-```ts
-import {
-  createInputManager,
-  movementSystem,
-  cameraFollowSystem,
-  fpsCameraSystem,
-  fpsMovementSystem,
-  InputState,
-  Controllable,
-  FPSCamera,
-} from '@arcane-engine/input';
-import type { CameraFollowOptions, InputManagerHandle } from '@arcane-engine/input';
-```
-
-`createInputManager(world, canvas?)` creates one ECS entity that stores input state. Pass the **canvas** to enable pointer lock on click for FPS scenes. Systems read ECS data and should not talk to the DOM directly.
-
----
-
-## Physics API
-
-Import from `@arcane-engine/physics`. Call **`await initPhysics()`** once at app startup before `createPhysicsContext`.
-
-Typical **`fps-test`** stack: `hitFlashRestoreSystem` → `physicsSystem` → `characterControllerSystem` → `fpsCameraSystem` → `weaponSystem` → `damageZoneSystem` → `healthSystem` → `gameStateSystem` → `renderSystem`. **`multiplayer`** inserts **`networkSyncSystem`** after **`healthSystem`** (before **`gameStateSystem`**).
-
-See [`packages/physics/README.md`](./packages/physics/README.md) for collider shapes, `raycast`, and body types (`fixed`, `dynamic`, `kinematic`).
-
----
-
-## Scene API
-
-Scenes are plain objects with `setup(world)` and optional `teardown(world)`.
-
-```ts
-import { createSceneManager } from '@arcane-engine/core';
-import type { Scene } from '@arcane-engine/core';
-
-const scenes: Record<string, Scene> = {
-  title: { setup(world) {} },
-  gameplay: { setup(world) {} },
-};
-```
-
-`createSceneManager(world, scenes)` handles:
-
-- running the previous scene's optional `teardown(world)`
-- resetting the ECS world
-- running the next scene's `setup(world)`
-
----
-
-## Coding Conventions
-
-### Non-negotiables
+Non-negotiables:
 
 1. TypeScript strict mode everywhere
-2. No classes for components
-3. Systems are pure functions with `(world: World, dt: number) => void`
-4. `dt` is in seconds
+2. components are plain objects created with `defineComponent()`
+3. systems are pure `(world: World, dt: number) => void` functions
+4. `dt` is always in seconds
 5. `Entity` is just a number
 
-### Naming
+Naming:
 
 | Thing | Convention | Example |
-|-------|------------|---------|
-| Component constants | PascalCase | `Position`, `Health` |
-| System functions | camelCase | `movementSystem`, `spinSystem` |
-| Source files | camelCase | `world.ts`, `movementSystem.ts` |
-| Test files | `<source>.test.ts` | `world.test.ts` |
-| Packages | kebab-case | `@arcane-engine/renderer` |
+| --- | --- | --- |
+| Component constants | PascalCase | `Position` |
+| System functions | camelCase | `renderSystem` |
+| Source files | camelCase | `sceneRegistry.ts` |
+| Test files | `<name>.test.ts` | `sceneRegistry.test.ts` |
 
-### File conventions
+## File Conventions
 
-- `scenes/<name>.ts` exports `setup(world)` and optional `teardown(world)`
-- `systems/<name>.ts` exports one system
-- `components/<name>.ts` exports one component
-- `game.config.ts` is the top-level project config entry point
+- `scenes/<name>.ts`: exports `setup(world)` and optional `teardown(world)`
+- `components/<name>.ts`: exports one component
+- `systems/<name>.ts`: exports one system
+- `game.config.ts`: top-level app config
+- `src/runtime/*`: runtime helpers used by templates and examples
 
----
+## Scenes And Preload
+
+Core scenes are synchronous:
+
+- `setup(world)`
+- optional `teardown(world)`
+
+The templates and example runtime add one small optional seam:
+
+- `preload(context?)`
+
+Use that when a scene needs to finish async asset loading before `setup(world)` runs.
+
+Keep the contract simple:
+
+- `preload()` may be async
+- `setup(world)` stays sync
+
+## Example-Local Vs Package-Level
+
+Keep logic example-local when:
+
+- it only serves `hello-cube`
+- the naming is still highly demo-specific
+- moving it into a package would hide how the example works
+
+Promote logic into a package when:
+
+- multiple shipped apps need it
+- the API is stable enough to document simply
+- package tests are clearer than example-only tests
+
+Important example-local helpers today:
+
+- `examples/hello-cube/src/fpsSceneRuntime.ts`
+- `examples/hello-cube/src/fpsPlayerSetup.ts`
 
 ## Docs Style
 
-This repo is shared **in public** (GitHub and social). When writing docs or comments:
+Assume the reader may be new to game engines.
 
-- prefer simple language over jargon
-- explain ECS concepts the first time they appear
-- assume the reader may be new to game engines
-- optimize for "easy to understand in one pass"
+When writing docs or comments:
 
-If something is technically correct but hard to explain, prefer the simpler version.
+- prefer simple words over jargon
+- define ECS terms the first time you use them
+- explain what the code is doing, not just what the API is called
+- optimize for one-pass understanding
 
----
+If a sentence is technically right but harder to understand, rewrite it.
 
-## Current Baseline
+## Testing And Verification
 
-- **Stages 1–12** (PRD V2 FPS track) are implemented and tested
-- Physics package: fixed / dynamic / **kinematic** bodies, **`raycast()`**, **`CharacterController`** + **`characterControllerSystem`**
-- Input package: **`FPSCamera`**, **`fpsCameraSystem`**, **`fpsMovementSystem`**, **`InputState.mouseButtons`**, pointer lock via **`createInputManager(world, canvas)`**
-- **hello-cube**: title, gameplay, textured floor/walls, physics (**P**), **fps-test** (**F**), **multiplayer** (**M**); shared example-local FPS scene/runtime helpers via **`fpsSceneRuntime`** and **`fpsPlayerSetup`**; **`@arcane-engine/server`** relay; touch devices get **`mobileControls`** overlay (see README); scene modules lazy-load, and physics-backed scenes preload Rapier on demand instead of app boot awaiting **`initPhysics()`**; root **`pnpm test`** builds **core → renderer → assets → input → physics → server** before workspace tests
-- **Stage 21 vertical slice polish**: `hello-cube` now frames those same features through a clickable command deck, shared scene presentation copy, clearer preload messaging, and more intentional onboarding across gameplay, FPS, and multiplayer
-- **Stage 14 renderer upgrade**: `createRenderer()` supports background / clear color / pixel ratio / shadow defaults, provided canvases resize correctly, and `@arcane-engine/renderer` exports `addEnvironmentLighting()` plus `addDirectionalShadowLight()`
-- **Stage 15 texture pipeline + Stage 16 model loading + Stage 17 animation playback + Stage 19 scene assets**: `@arcane-engine/assets` exports `createTextureCache()`, `loadTexture(...)`, `loadModel(...)`, `spawnModel(...)`, `spawnModelInstances(...)`, `preloadSceneAssets(...)`, `AnimationPlayer`, `animationSystem()`, `playAnimation(...)`, `stopAnimation(...)`, and `disposeAssetCache(...)`; texture and model source reuse is cached; animated model instances get mixer-backed clip playback; loading progress hooks support simple overlays; docs include teardown guidance; `hello-cube` gameplay validates preloaded textured rendering plus imported static and animated props
-- **Stage 18 gameplay extraction**: repeated FPS scene setup now lives in shared example-local helpers; **`Health`** / **`Damage`** stay example-local; there is still intentionally no shipped **`packages/gameplay`**
-- `packages/create-arcane` scaffolds starter projects; `templates/starter` builds
-- root `README.md` and `CONTRIBUTING.md` exist; public APIs have JSDoc
-- verified from repo root: `pnpm test`, `pnpm typecheck`, `pnpm build`
-- verified scaffold: local CLI + generated project `pnpm install`, `pnpm typecheck`, `pnpm build`
+When you change public behavior:
 
----
+- update tests in the touched package or example
+- keep docs aligned with the real exports
+- run the narrowest useful checks first, then broader repo checks when needed
 
-## Testing Requirements
+Common commands:
 
-- Every public function should have a Vitest test
-- Tests live in `packages/<pkg>/tests/` or `examples/<name>/tests/`
-- Tests should import from `src/`, not from `dist/`
-- Hot paths should include at least one performance-oriented test
-- Run all tests from the repo root with `pnpm test`
-
----
-
-## Git And Repository Hygiene
-
-- Do not commit generated outputs like `dist/`, `node_modules/`, or temporary scaffold folders
-- Do not revert unrelated user changes
-- Keep docs and stage references up to date when the project meaningfully changes
-
----
-
-## Commit Format
-
-Use Conventional Commits:
-
-```text
-feat(physics): expose raycast max distance
-fix(renderer): prevent mesh leak on destroyEntity
-docs(readme): clarify ECS concepts
-test(input): cover pointer lock
-chore: update lockfile
+```sh
+pnpm test
+pnpm typecheck
+pnpm build
 ```
 
-Valid scopes: `core`, `renderer`, `assets`, `input`, `physics`, `server`, `create-arcane`, `examples`, `docs`
+## Scope Defaults
 
----
+Do not build these unless the task explicitly asks for them:
 
-## Performance Targets
+- audio systems
+- a visual editor
+- a general plugin ecosystem
+- production-grade game servers
+- a hidden asset pipeline
+- WebGPU renderer work
 
-| Operation | Target |
-|-----------|--------|
-| Create 1,000 entities + 3 components each | < 10ms |
-| Query 1,000 entities with a 2-component filter | < 5ms |
-| Full frame at 100 entities | 60fps |
-| Framework bundle gzipped | < 200KB |
-
----
-
-## What Not To Build Yet (Unless Explicitly Asked)
-
-From **PRD V2** and beyond the current stage:
-
-- **V2.0** is shipped; treat **PRD V2 §1.3** as the default scope ceiling unless asked to go further
-- Full **asset pipeline** / GLTF (procedural geometry is the norm for now)
-- **Audio**
-- **Anticheat**, production-grade networking product
-- **Mobile / gamepad** as the primary product input story (demo touch UI is example-only)
-- **WebGPU** renderer
-- Open-ended **plugin ecosystem**
+Favor the smallest clear solution over “framework expansion.”

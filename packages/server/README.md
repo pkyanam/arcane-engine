@@ -1,45 +1,70 @@
 # @arcane-engine/server
 
-Minimal **WebSocket relay** for shipped multiplayer: `welcome` on connect, explicit `join`, fan-out `move` and `shoot`, `leave` on disconnect, plus `ping` / `pong` for a tiny HUD latency readout. No game logic and no server-side simulation.
+Tiny WebSocket relay for Arcane Engine multiplayer demos.
+
+This package does not run game logic or simulation.
+
+It only relays messages like:
+
+- player joined
+- player moved
+- player shot
+- player left
+- ping
+
+That keeps the server easy to understand and easy to host.
 
 ## Run
 
-```bash
+```sh
 pnpm --filter @arcane-engine/server build
 pnpm --filter @arcane-engine/server start
 ```
 
-Default URL: `ws://localhost:8765` (max 4 clients).
+Default address: `ws://localhost:8765`
 
 ## API
 
 ```ts
 import { startRelayServer } from '@arcane-engine/server';
 
-const { httpServer, close, port } = startRelayServer({
+const relay = startRelayServer({
   port: 8765,
   host: '127.0.0.1',
-  onPlayerCount: (n) => console.log('players:', n),
+  onPlayerCount(count) {
+    console.log('players:', count);
+  },
 });
 
-await close();
+await relay.close();
 ```
 
-The returned object also includes `wss`, the underlying `WebSocketServer`, when you need lower-level access in app code or tests.
+The returned object includes:
 
-## Protocol (JSON text frames)
+- `httpServer`
+- `wss`
+- `port`
+- `close()`
 
-**Server → client**
+## Protocol
 
-- `{ "type": "welcome", "playerId": string, "existingPlayers": [{ "playerId", "position", "yaw" }] }`
-- `{ "type": "join", "playerId", "position": {x,y,z}, "yaw": number }`
-- `{ "type": "move", "playerId", "position": {x,y,z}, "yaw": number }`
-- `{ "type": "shoot", "playerId", "origin", "direction" }` (vec3 each)
-- `{ "type": "leave", "playerId" }`
+Server to client:
+
+- `{ "type": "welcome", "playerId": string, "existingPlayers": [...] }`
+- `{ "type": "join", "playerId": string, "position": {x,y,z}, "yaw": number }`
+- `{ "type": "move", "playerId": string, "position": {x,y,z}, "yaw": number }`
+- `{ "type": "shoot", "playerId": string, "origin": {x,y,z}, "direction": {x,y,z} }`
+- `{ "type": "leave", "playerId": string }`
 - `{ "type": "pong", "sentAt": number }`
 
-**Client → server**
+Client to server:
 
 - `{ "type": "move", "position": {x,y,z}, "yaw": number }`
 - `{ "type": "shoot", "origin": {x,y,z}, "direction": {x,y,z} }`
 - `{ "type": "ping", "sentAt": number }`
+
+## Notes
+
+- the relay allows up to 4 connected clients
+- clients stay authoritative for their own movement
+- this package is meant for prototypes and teaching examples, not production-grade servers

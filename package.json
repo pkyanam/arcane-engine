@@ -1,6 +1,6 @@
 {
   "name": "arcane-engine",
-  "version": "0.2.0",
+  "version": "3.0.1",
   "private": true,
   "scripts": {
     "test": "pnpm --filter @arcane-engine/core build && pnpm --filter @arcane-engine/renderer build && pnpm --filter @arcane-engine/assets build && pnpm --filter @arcane-engine/input build && pnpm --filter @arcane-engine/physics build && pnpm --filter @arcane-engine/server build && pnpm -r test",

@@ -1,6 +1,6 @@
 # @arcane-engine/server
 
-Minimal **WebSocket relay** for shipped V2 multiplayer: fan-out `move` and `shoot`, `welcome` on connect, `leave` on disconnect. No game logic and no server-side simulation.
+Minimal **WebSocket relay** for shipped multiplayer: `welcome` on connect, explicit `join`, fan-out `move` and `shoot`, `leave` on disconnect, plus `ping` / `pong` for a tiny HUD latency readout. No game logic and no server-side simulation.
 
 ## Run
 
@@ -18,6 +18,7 @@ import { startRelayServer } from '@arcane-engine/server';
 
 const { httpServer, close, port } = startRelayServer({
   port: 8765,
+  host: '127.0.0.1',
   onPlayerCount: (n) => console.log('players:', n),
 });
 
@@ -31,11 +32,14 @@ The returned object also includes `wss`, the underlying `WebSocketServer`, when 
 **Server → client**
 
 - `{ "type": "welcome", "playerId": string, "existingPlayers": [{ "playerId", "position", "yaw" }] }`
+- `{ "type": "join", "playerId", "position": {x,y,z}, "yaw": number }`
 - `{ "type": "move", "playerId", "position": {x,y,z}, "yaw": number }`
 - `{ "type": "shoot", "playerId", "origin", "direction" }` (vec3 each)
 - `{ "type": "leave", "playerId" }`
+- `{ "type": "pong", "sentAt": number }`
 
 **Client → server**
 
 - `{ "type": "move", "position": {x,y,z}, "yaw": number }`
 - `{ "type": "shoot", "origin": {x,y,z}, "direction": {x,y,z} }`
+- `{ "type": "ping", "sentAt": number }`

@@ -9,15 +9,37 @@ const CORE_DEPENDENCY_PLACEHOLDER = '__ARCANE_ENGINE_CORE_DEPENDENCY__';
 const INPUT_DEPENDENCY_PLACEHOLDER = '__ARCANE_ENGINE_INPUT_DEPENDENCY__';
 const RENDERER_DEPENDENCY_PLACEHOLDER = '__ARCANE_ENGINE_RENDERER_DEPENDENCY__';
 const ARCANE_PACKAGES = ['assets', 'core', 'input', 'renderer'] as const;
+const ARCANE_TEMPLATE_DEFINITIONS = [
+  {
+    name: 'starter',
+    description: 'Minimal ECS + scene-transition starter.',
+  },
+  {
+    name: 'asset-ready',
+    description: 'Textured scene + model + preload walkthrough.',
+  },
+] as const;
+const DEFAULT_TEMPLATE_NAME = 'starter';
 
 type ArcanePackageName = (typeof ARCANE_PACKAGES)[number];
 type DependencyMode = 'local' | 'published';
+export type ArcaneTemplateName = (typeof ARCANE_TEMPLATE_DEFINITIONS)[number]['name'];
 
 interface DependencySpecifiers {
   assets: string;
   core: string;
   input: string;
   renderer: string;
+}
+
+/**
+ * Metadata describing one shipped `create-arcane` template.
+ */
+export interface ArcaneTemplateDefinition {
+  /** Template name passed to `--template`. */
+  name: ArcaneTemplateName;
+  /** Short user-facing description for help text and docs. */
+  description: string;
 }
 
 /**
@@ -28,6 +50,8 @@ export interface CreateArcaneProjectOptions {
   destination: string;
   /** Base directory used to resolve {@link destination}. Defaults to `process.cwd()`. */
   cwd?: string;
+  /** Scaffold a specific template. Defaults to `"starter"`. */
+  template?: ArcaneTemplateName;
   /** Run `pnpm install` after copying the template. Defaults to `true`. */
   install?: boolean;
   /** Start `pnpm dev` in the background after install. Defaults to `true`. */
@@ -42,6 +66,8 @@ export interface CreateArcaneProjectResult {
   projectName: string;
   /** Absolute path to the generated project directory. */
   targetDir: string;
+  /** Template that was scaffolded. */
+  template: ArcaneTemplateName;
   /** Whether dependency installation was run. */
   installed: boolean;
   /** Whether the dev server was started in the background. */
@@ -51,7 +77,14 @@ export interface CreateArcaneProjectResult {
 }
 
 /**
- * Copy the starter template, replace placeholders, optionally install
+ * Return the shipped templates supported by `create-arcane`.
+ */
+export function listArcaneTemplates(): readonly ArcaneTemplateDefinition[] {
+  return ARCANE_TEMPLATE_DEFINITIONS;
+}
+
+/**
+ * Copy the selected template, replace placeholders, optionally install
  * dependencies, and optionally start the dev server.
  */
 export async function createArcaneProject(
@@ -64,11 +97,12 @@ export async function createArcaneProject(
   const cwd = options.cwd ?? process.cwd();
   const targetDir = path.resolve(cwd, options.destination);
   const projectName = path.basename(targetDir);
+  const template = resolveTemplateName(options.template);
 
   validateProjectName(projectName);
   await assertSafeTargetDirectory(targetDir);
 
-  const templateDir = await resolveTemplateDirectory();
+  const templateDir = await resolveTemplateDirectory(template);
   await copyTemplateDirectory(templateDir, targetDir);
 
   const { mode, specifiers } = await resolveDependencySpecifiers(targetDir, cwd);
@@ -95,6 +129,7 @@ export async function createArcaneProject(
   return {
     projectName,
     targetDir,
+    template,
     installed,
     started,
     dependencyMode: mode,
@@ -126,11 +161,26 @@ async function assertSafeTargetDirectory(targetDir: string): Promise<void> {
   }
 }
 
-async function resolveTemplateDirectory(): Promise<string> {
+function resolveTemplateName(templateName: ArcaneTemplateName | undefined): ArcaneTemplateName {
+  const resolvedTemplateName = templateName ?? DEFAULT_TEMPLATE_NAME;
+
+  if (
+    ARCANE_TEMPLATE_DEFINITIONS.some((definition) => definition.name === resolvedTemplateName)
+  ) {
+    return resolvedTemplateName;
+  }
+
+  throw new Error(
+    `createArcaneProject: unknown template "${resolvedTemplateName}". ` +
+      `Available templates: ${listArcaneTemplates().map((template) => template.name).join(', ')}`,
+  );
+}
+
+async function resolveTemplateDirectory(templateName: ArcaneTemplateName): Promise<string> {
   const moduleDir = path.dirname(fileURLToPath(import.meta.url));
   const candidates = [
-    path.resolve(moduleDir, '../templates/starter'),
-    path.resolve(moduleDir, '../../../templates/starter'),
+    path.resolve(moduleDir, `../templates/${templateName}`),
+    path.resolve(moduleDir, `../../../templates/${templateName}`),
   ];
 
   for (const candidate of candidates) {
@@ -140,7 +190,7 @@ async function resolveTemplateDirectory(): Promise<string> {
     }
   }
 
-  throw new Error('createArcaneProject: could not locate the starter template');
+  throw new Error(`createArcaneProject: could not locate the "${templateName}" template`);
 }
 
 async function copyTemplateDirectory(sourceDir: string, targetDir: string): Promise<void> {

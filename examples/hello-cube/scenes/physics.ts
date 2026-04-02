@@ -4,6 +4,8 @@ import { BoxCollider, createPhysicsContext, physicsSystem, RigidBody } from '@ar
 import type { PhysicsContext } from '@arcane-engine/physics';
 import { MeshRef, renderSystem, Rotation, spawnMesh } from '@arcane-engine/renderer';
 import * as THREE from 'three';
+import { ensurePhysicsReady } from '../src/ensurePhysicsReady.js';
+import { createHelloCubePanel, getHelloCubeSceneCopy } from '../src/helloCubePresentation.js';
 import { getGameContext } from '../src/runtime/gameContext.js';
 import { requestSceneChange } from '../src/runtime/sceneTransitions.js';
 
@@ -17,6 +19,7 @@ let geometries: THREE.BufferGeometry[] = [];
 let materials: THREE.Material[] = [];
 let overlay: HTMLDivElement | undefined;
 let escListener: ((e: KeyboardEvent) => void) | undefined;
+const PHYSICS_COPY = getHelloCubeSceneCopy('physics');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -82,27 +85,30 @@ function spawnDynamicCube(
 }
 
 function createOverlay(): HTMLDivElement {
-  const el = document.createElement('div');
-  el.style.position = 'fixed';
-  el.style.bottom = '24px';
-  el.style.left = '50%';
-  el.style.transform = 'translateX(-50%)';
-  el.style.padding = '10px 20px';
-  el.style.background = 'rgba(15, 23, 42, 0.72)';
-  el.style.border = '1px solid rgba(125, 211, 252, 0.3)';
-  el.style.borderRadius = '999px';
-  el.style.color = '#e2e8f0';
-  el.style.fontFamily = '"Avenir Next", "Segoe UI", sans-serif';
-  el.style.fontSize = '13px';
-  el.style.letterSpacing = '0.06em';
-  el.style.pointerEvents = 'none';
-  el.textContent = 'Physics Demo — Press Escape to return';
-  return el;
+  const panel = createHelloCubePanel({
+    eyebrow: PHYSICS_COPY.eyebrow,
+    title: PHYSICS_COPY.displayName,
+    body: PHYSICS_COPY.summary,
+    footer: PHYSICS_COPY.controlHint,
+    badges: PHYSICS_COPY.badges,
+  });
+  panel.root.style.position = 'fixed';
+  panel.root.style.left = '50%';
+  panel.root.style.bottom = '24px';
+  panel.root.style.transform = 'translateX(-50%)';
+  panel.root.style.maxWidth = 'min(540px, calc(100vw - 48px))';
+  panel.root.style.pointerEvents = 'none';
+  panel.root.style.zIndex = '7';
+  return panel.root;
 }
 
 // ---------------------------------------------------------------------------
 // Scene lifecycle
 // ---------------------------------------------------------------------------
+
+export async function preload(): Promise<void> {
+  await ensurePhysicsReady();
+}
 
 export function setup(world: World): void {
   const { ctx } = getGameContext();
@@ -192,4 +198,3 @@ export function teardown(world: World): void {
 
   physicsCtx = undefined;
 }
-

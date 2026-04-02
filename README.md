@@ -4,7 +4,7 @@
 
 We are **building in public** — the repo lives on GitHub, and we share progress openly (say hi on X if you try it). Perfect is not the goal; **clear and learnable** is.
 
-**Status (March 2026):** **V2.0 shipped**, **Stage 13: V2 Polish + Docs Sync is complete**, **Stage 14: Renderer Upgrade for Real Assets is complete**, **Stage 15: Texture Pipeline is complete**, **Stage 16: 3D Model Loading is complete**, and **Stage 17: Animation Playback is complete**. PRD Stages **1–12** are complete in code and tests (`hello-cube`: **F** fps-test, **M** multiplayer, touch overlay on phones). The next default V3 task is **Stage 18: Gameplay Primitives Extraction**. Roadmap tables: [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) and [`ARCANE_ENGINE_PRD_V3.md`](./ARCANE_ENGINE_PRD_V3.md). **Release `v0.2.0`:** see [`CHANGELOG.md`](./CHANGELOG.md). *#BuildInPublic*
+**Status (April 2026):** **V2.0 shipped**, **Stages 13–23 of PRD V3 are complete**, and **the current V3 roadmap is closed out in code, tests, docs, and templates**. PRD Stages **1–12** are complete in code and tests (`hello-cube`: **F** fps-test, **M** multiplayer, touch overlay on phones). Anything beyond Stage 23 belongs in a **future PRD**, not silent scope creep inside V3. Roadmap tables: [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) and [`ARCANE_ENGINE_PRD_V3.md`](./ARCANE_ENGINE_PRD_V3.md). **Release `v0.2.0`:** see [`CHANGELOG.md`](./CHANGELOG.md). *#BuildInPublic*
 
 ---
 
@@ -41,6 +41,8 @@ The big-picture plan is in [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md
 - **Character controller**: walk and jump in a room **without falling through the floor or clipping walls**
 - **Weapons + hitscan** and **HUD + game state** in **fps-test** (**F**): crosshair, health bar, kills, death/win overlays, **R** respawn, optional floor damage tile
 - **Multiplayer** (**M**): `packages/server` relay (≤4 players), `networkSyncSystem`, colored **ghost** boxes for remote peers, **shoot** relay so each client raycasts remote shots against its own player body
+- **Stage 20 polish**: smoothed remote ghost movement, explicit relay `join` + `ping` / `pong`, HUD relay state / peer count / ping, and clearer reconnect / disconnect messaging in `hello-cube`
+- **Stage 21 polish**: a clearer `hello-cube` command deck, shared scene presentation/copy across preload and in-scene overlays, and a more intentional walkthrough from gameplay into FPS and multiplayer
 
 If the PRD’s checklist table ever looks stale, **the code and tests win**.
 
@@ -50,12 +52,22 @@ If the PRD’s checklist table ever looks stale, **the code and tests win**.
 |------|-------------|
 | `@arcane-engine/core` | ECS world, entities, components, queries, systems, game loop, scene manager |
 | `@arcane-engine/renderer` | Three.js setup, renderer defaults, environment/shadow lighting helpers, render system, transform components, `spawnMesh` helper |
-| `@arcane-engine/assets` | Texture loading, glTF / GLB loading, explicit cache reuse, `spawnModel`, imported-model animation playback, and Vite-friendly asset imports |
+| `@arcane-engine/assets` | Texture loading, glTF / GLB loading, scene asset manifests, loading-progress hooks, repeated model spawning, explicit cache reuse, imported-model animation playback, and Vite-friendly asset imports |
 | `@arcane-engine/input` | Keyboard + mouse input, orbit follow camera, FPS look, pointer lock, shared `InputState` |
 | `@arcane-engine/physics` | Rapier init/context, fixed/dynamic/kinematic bodies, box colliders, `raycast`, character controller |
 | `@arcane-engine/server` | Small Node WebSocket relay for up to 4 multiplayer clients |
-| `hello-cube` example | Title, gameplay, textured floor/walls, imported props, animated imported beacon, physics, FPS, multiplayer, HUD, respawn, touch overlay |
-| Starter template | Title + gameplay scenes, runtime helpers, assets package dependency, and tiny texture + model + animation doc paths via `create-arcane` |
+| `hello-cube` example | Clickable command deck, clearer scene onboarding, textured floor/walls, preloaded scene assets, animated imported beacon, repeated imported props, loading overlay, physics, FPS, multiplayer, HUD, respawn, touch overlay, and shared local FPS setup helpers |
+| Templates | `starter`: minimal ECS + scene-transition baseline. `asset-ready`: shipped texture + model + preload walkthrough with tiny example assets. |
+
+## Stage 23 Closeout
+
+Stage 23 finishes the current V3 plan with hardening rather than new framework surface:
+
+- asset cache disposal coverage now explicitly tests cached texture variants and shared model resources
+- `hello-cube` and the shipped template runtimes lazy-load scene modules so the initial bundle stays focused on the current path
+- `hello-cube` now loads Rapier on demand for physics-backed scenes instead of paying that cost on title-screen boot
+
+The remaining large example chunk is Rapier's own monolithic distribution. Stage 23 isolates it behind scene entry instead of rewriting around it, and leaves deeper physics-bundle work for a future PRD.
 
 ---
 
@@ -128,6 +140,45 @@ The beginner-friendly mental model is:
 3. `spawnModel(...)` it into the world
 4. register `animationSystem()`
 5. call `playAnimation(...)` with the clip name you want
+
+## Scene Asset Workflow
+
+Stage 19 adds a small explicit preload path for content-heavy scenes.
+
+- `@arcane-engine/assets` now exports `preloadSceneAssets(ctx, manifest, options?)`
+- scene modules can declare textures and models in one named manifest
+- `preloadSceneAssets(...)` reports progress through `onProgress(...)` for simple loading overlays
+- `spawnModelInstances(...)` places repeated props from one loaded model source without hand-writing the same loop in every scene
+- the runtime seam stays small: scenes may optionally export `preload()`, while `setup(world)` stays synchronous
+
+The beginner-friendly mental model is:
+
+1. declare a scene asset manifest in one place
+2. preload it before entering the scene
+3. use the loaded textures/models during sync `setup(world)`
+4. dispose the same cache during `teardown(world)`
+
+## Gameplay Helpers
+
+Stage 18 reduced repeated FPS boilerplate in `hello-cube` without shipping a premature gameplay package.
+
+- `examples/hello-cube/src/fpsSceneRuntime.ts` now holds the shared arena, HUD, input, muzzle-flash, and teardown shell used by both **fps-test** and **multiplayer**
+- `examples/hello-cube/src/fpsPlayerSetup.ts` now holds the shared local-player and FPS game-state spawn helpers
+- `Health` and `Damage` remain example-local but are now used through the shared FPS path instead of being recreated per scene
+- `GameState`, HUD copy, respawn rules, damage zones, and weapon flow still stay in `hello-cube` because they are tightly coupled to the demo and still only serve one shipped example path
+
+There is still **no shipped `packages/gameplay`**. That package remains optional until more than one example or starter path clearly needs the same gameplay API.
+
+## Stage 19 In Practice
+
+`examples/hello-cube/scenes/gameplay.ts` is now the shipped Stage 19 proof path:
+
+- one named scene asset manifest declares the floor texture, wall texture, crystal model, and animated beacon
+- the gameplay scene preloads those assets before sync setup runs
+- the player sees a simple loading overlay driven by progress callbacks
+- repeated crystal props use `spawnModelInstances(...)` instead of ad hoc load/spawn orchestration
+
+This keeps the asset workflow explicit without adding a hidden database, editor tooling, or a generalized gameplay package.
 
 ---
 
@@ -222,12 +273,12 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 
 | Key | What it does |
 |-----|----------------|
-| **Enter** | Gameplay scene (cube world, WASD) |
+| **Enter** | **Sanctum Walkthrough** — start-here textured environment + imported props + animated beacon + preload flow |
 | **P** | Physics playground (cubes + gravity) |
 | **F** | **FPS test** — click canvas for pointer lock; WASD, Space, shoot targets; HUD; **R** respawn if dead; Esc → title |
 | **M** | **Multiplayer** — same arena as **F**; start relay first; ghost players; Esc → title |
 
-**Phone / touch (hello-cube):** On coarse pointers or touch screens, an overlay appears: **title** uses four scene buttons; **in-game** uses a **move stick** (maps to WASD), **Title** (top-right) to return to the menu, and on **FPS** / **Multiplayer** a **drag-to-look** strip plus **Jump**, **Fire**, and **Respawn** (R). Keyboard still works when connected.
+**Phone / touch (hello-cube):** On coarse pointers or touch screens, an overlay appears: **title** uses the same four route buttons as the desktop command deck; **in-game** uses a **move stick** (maps to WASD), **Title** (top-right) to return to the menu, and on **FPS** / **Multiplayer** a **drag-to-look** strip plus **Jump**, **Fire**, and **Respawn** (R). Keyboard still works when connected.
 
 **Shipping a GitHub release (#BuildInPublic):** Update [`CHANGELOG.md`](./CHANGELOG.md) and root `package.json` `version`, then tag (e.g. `v0.2.0`) and create a GitHub Release from that tag. Details: [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
@@ -239,13 +290,21 @@ Published:
 
 ```sh
 npx @arcane-engine/create-arcane my-game
+npx @arcane-engine/create-arcane my-game --template asset-ready
 ```
 
-That creates a folder, copies the starter template, fixes the name, installs deps, and can start the dev server.
+That creates a folder, copies the requested template, fixes the name, installs deps, and can start the dev server.
+
+Shipped template choices:
+
+- `starter`: the smallest readable Arcane Engine baseline
+- `asset-ready`: the official Stage 15-19 path with preload, textures, imported props, and an animated imported beacon
 
 Flags:
 
 ```sh
+create-arcane my-game --template starter
+create-arcane my-game --template asset-ready
 create-arcane my-game --no-install
 create-arcane my-game --no-start
 ```
@@ -376,7 +435,7 @@ JSDoc lives next to the source in `packages/*/src`.
 - **Multiplayer relay** (M): remote ghost players and relayed hitscan shots
 - **Touch fallback UI** on phones and coarse pointers
 
-It is not a shipped game — it is a **readable proof** that the pieces work together.
+It is still not a shipped game, but Stage 21 turns it into a **teaching vertical slice** instead of a loose proof-of-features checklist.
 
 ---
 
@@ -412,6 +471,8 @@ We want this repo to be easy to **read**, **fork**, **teach**, and **extend** �
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) — how to contribute  
 - [`AGENTS.md`](./AGENTS.md) — notes for Codex and other agents  
 - [`CLAUDE.md`](./CLAUDE.md) — notes for Claude Code  
+- [`docs/STAGE_TEMPLATE.md`](./docs/STAGE_TEMPLATE.md) — short template for future stage prompts and PRD slices
+- [`docs/AGENT_WORKFLOW.md`](./docs/AGENT_WORKFLOW.md) — task splitting guidance plus the example-local vs package-level checklist
 - [`packages/assets/README.md`](./packages/assets/README.md) — texture loading and disposal
 - [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) — roadmap to multiplayer FPS  
 - [`ARCANE_ENGINE_PRD_V3.md`](./ARCANE_ENGINE_PRD_V3.md) — proposed post-V2 roadmap  

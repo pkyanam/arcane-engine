@@ -6,7 +6,9 @@ Arcane Engine is intentionally small. Contributions should make the framework ea
 
 - Read `AGENTS.md` before changing code or adding files.
 - For shipped scope, read **`ARCANE_ENGINE_PRD_V2.md`** (V2 track is complete; §10 is post-V2 guidance).
-- For the current default follow-up scope, read **`ARCANE_ENGINE_PRD_V3.md`** starting at **Stage 18: Gameplay Primitives Extraction**.
+- For the shipped post-V2 roadmap, read **`ARCANE_ENGINE_PRD_V3.md`** with **Stage 23** marked complete; anything beyond it should be framed as a future-PRD conversation.
+- For new stage prompts, start from **`docs/STAGE_TEMPLATE.md`** instead of rewriting the same structure from scratch.
+- For multi-agent task splitting and package-boundary decisions, use **`docs/AGENT_WORKFLOW.md`**.
 - Keep work aligned with **CONTRIBUTING** / **AGENTS** and avoid scope in **PRD §1.3** unless explicitly requested.
 - Prefer small, reviewable changes over broad framework expansion.
 
@@ -69,6 +71,7 @@ When adding framework features, preserve the existing package boundaries:
 - Re-check `AGENTS.md` and the **PRD** / **README** before making assumptions.
 - Inspect the existing implementation first; do not invent missing architecture if a lighter extension will work.
 - Avoid feature creep. Stage work should feel polished, not bigger.
+- Keep the Stage 19 preload seam small. Prefer optional scene `preload()` hooks and explicit asset manifests over hidden runtime managers.
 - Prefer example-local helpers for demo behavior instead of expanding package APIs just to support one example.
 - Never revert unrelated user changes.
 - Do not use destructive git commands unless the user explicitly asks for them.

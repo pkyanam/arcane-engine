@@ -147,7 +147,7 @@ describe('gameStateSystem', () => {
     sys(world, 1 / 60);
 
     expect(hud.healthLabel.textContent).toBe('7 / 10');
-    expect(hud.killsLabel.textContent).toBe('1');
+    expect(hud.killsLabel.textContent).toBe('Kills 1');
     expect(hud.healthFill.style.transform).toContain('scaleX');
   });
 });

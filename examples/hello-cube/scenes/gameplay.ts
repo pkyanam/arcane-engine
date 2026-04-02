@@ -1,13 +1,12 @@
 import {
   animationSystem,
-  createTextureCache,
   disposeAssetCache,
-  loadModel,
-  loadTexture,
   playAnimation,
+  preloadSceneAssets,
   spawnModel,
-  type AssetCache,
-  type TextureLoadContext,
+  spawnModelInstances,
+  type SceneAssetBundle,
+  type SceneAssetManifest,
 } from '@arcane-engine/assets';
 import { addComponent, getComponent, query, registerSystem } from '@arcane-engine/core';
 import type { SystemFn, World } from '@arcane-engine/core';
@@ -34,19 +33,27 @@ import floorTextureUrl from '../src/assets/gameplay-floor.svg';
 import wallTextureUrl from '../src/assets/gameplay-wall.svg';
 import crystalModelUrl from '../src/assets/arcane-crystal.glb?url';
 import { FloatingMotion, floatingMotionSystem } from '../src/floatingMotion.js';
+import { createHelloCubePanel, getHelloCubeSceneCopy } from '../src/helloCubePresentation.js';
 import { getGameContext } from '../src/runtime/gameContext.js';
+import type { ScenePreloadContext } from '../src/runtime/scenePreload.js';
 import { requestSceneChange } from '../src/runtime/sceneTransitions.js';
 import { spinSystem } from '../src/spinSystem.js';
 
 let inputHandle: ReturnType<typeof createInputManager> | undefined;
 let sceneObjects: THREE.Object3D[] = [];
-let hud: HTMLDivElement | undefined;
+let hud:
+  | {
+      root: HTMLDivElement;
+      body: HTMLParagraphElement;
+      status: HTMLParagraphElement;
+      footer?: HTMLParagraphElement;
+    }
+  | undefined;
 let geometries: THREE.BufferGeometry[] = [];
 let materials: THREE.Material[] = [];
-let textureCache: AssetCache | undefined;
-let assetLoadGeneration = 0;
 let animatedBeaconEntity: number | undefined;
 let animatedBeaconClip: 'Idle' | 'Activate' | undefined;
+const GAMEPLAY_COPY = getHelloCubeSceneCopy('gameplay');
 
 const FLOATING_CUBE_COUNT = 20;
 const FLOATING_AXIS_OPTIONS: Array<'x' | 'y' | 'z'> = ['x', 'y', 'z'];
@@ -69,6 +76,39 @@ const ANIMATED_BEACON_LAYOUT = {
   scale: 1.8,
 };
 const BEACON_TRIGGER_DISTANCE = 7.5;
+const GAMEPLAY_SCENE_ASSET_MANIFEST = {
+  textures: {
+    floor: {
+      source: floorTextureUrl,
+      options: {
+        repeat: { x: 12, y: 12 },
+        colorSpace: 'srgb',
+      },
+    },
+    wall: {
+      source: wallTextureUrl,
+      options: {
+        repeat: { x: 8, y: 2 },
+        colorSpace: 'srgb',
+      },
+    },
+  },
+  models: {
+    crystal: {
+      source: crystalModelUrl,
+    },
+    beacon: {
+      source: animatedBeaconModelUrl,
+    },
+  },
+} satisfies SceneAssetManifest;
+
+type GameplaySceneAssets = SceneAssetBundle<typeof GAMEPLAY_SCENE_ASSET_MANIFEST>;
+
+let gameplaySceneAssets: GameplaySceneAssets | undefined;
+const GAMEPLAY_SCENE_ASSET_COUNT =
+  Object.keys(GAMEPLAY_SCENE_ASSET_MANIFEST.textures).length +
+  Object.keys(GAMEPLAY_SCENE_ASSET_MANIFEST.models).length;
 
 const gameplaySceneSystem: SystemFn = (world: World): void => {
   for (const entity of query(world, [InputState])) {
@@ -91,11 +131,11 @@ const gameplayHudSystem: SystemFn = (world: World): void => {
   }
 
   const position = getComponent(world, controlled[0], Position)!;
-  hud.innerHTML =
-    '<strong>Gameplay Demo</strong>' +
-    `<span>Move with WASD or arrows. ` +
-    `Player x ${position.x.toFixed(1)}, z ${position.z.toFixed(1)}. ` +
-    'Textured walls, static crystal props, and one animated imported beacon all reuse one scene-local asset cache. Walk near the center beacon to switch it into its Activate clip. Press Escape to return to the title scene.</span>';
+  hud.body.textContent =
+    'Explore the sanctum to see Stage 15-19 work as one path: textures on the room, imported crystal props, and a preloaded beacon that shifts clips when you get close.';
+  hud.status.textContent =
+    `Beacon ${animatedBeaconClip === 'Activate' ? 'awake' : 'idle'} • ` +
+    `Player x ${position.x.toFixed(1)}, z ${position.z.toFixed(1)}`;
 };
 
 const animatedBeaconSystem: SystemFn = (world: World): void => {
@@ -138,60 +178,61 @@ function randomAxis(): 'x' | 'y' | 'z' {
   return FLOATING_AXIS_OPTIONS[Math.floor(Math.random() * FLOATING_AXIS_OPTIONS.length)]!;
 }
 
-function createHud(): HTMLDivElement {
-  const element = document.createElement('div');
-  element.style.position = 'fixed';
-  element.style.left = '24px';
-  element.style.bottom = '24px';
-  element.style.display = 'grid';
-  element.style.gap = '6px';
-  element.style.padding = '14px 18px';
-  element.style.maxWidth = 'min(520px, calc(100vw - 48px))';
-  element.style.fontFamily = '"Avenir Next", "Segoe UI", sans-serif';
-  element.style.background =
-    'linear-gradient(140deg, rgba(15, 23, 42, 0.84), rgba(15, 118, 110, 0.32))';
-  element.style.color = '#e2e8f0';
-  element.style.border = '1px solid rgba(125, 211, 252, 0.28)';
-  element.style.borderRadius = '20px';
-  element.style.boxShadow = '0 18px 42px rgba(15, 23, 42, 0.34)';
-  element.style.backdropFilter = 'blur(12px)';
-  return element;
+function createHud(): {
+  root: HTMLDivElement;
+  body: HTMLParagraphElement;
+  status: HTMLParagraphElement;
+  footer?: HTMLParagraphElement;
+} {
+  const panel = createHelloCubePanel({
+    eyebrow: GAMEPLAY_COPY.eyebrow,
+    title: GAMEPLAY_COPY.displayName,
+    body: GAMEPLAY_COPY.summary,
+    footer: GAMEPLAY_COPY.controlHint,
+    badges: GAMEPLAY_COPY.badges,
+  });
+
+  panel.root.style.position = 'fixed';
+  panel.root.style.top = '24px';
+  panel.root.style.left = '24px';
+  panel.root.style.maxWidth = 'min(460px, calc(100vw - 48px))';
+  panel.root.style.zIndex = '7';
+  panel.root.style.pointerEvents = 'none';
+
+  const status = document.createElement('p');
+  status.className = 'arcane-ui-panel__meta';
+  panel.root.appendChild(status);
+
+  return {
+    root: panel.root,
+    body: panel.body,
+    status,
+    footer: panel.footer,
+  };
 }
 
-async function loadGameplayTextures(
-  textureCtx: TextureLoadContext,
+function getGameplaySceneAssets(): GameplaySceneAssets {
+  if (!gameplaySceneAssets) {
+    throw new Error(
+      'gameplay.setup: scene assets were not preloaded. Load this scene with loadSceneWithPreload() first.',
+    );
+  }
+
+  return gameplaySceneAssets;
+}
+
+function applyGameplayTextures(
+  assets: GameplaySceneAssets,
   groundMaterial: THREE.MeshStandardMaterial,
   wallMaterial: THREE.MeshStandardMaterial,
-  generation: number,
-): Promise<void> {
-  try {
-    const [groundTexture, wallTexture] = await Promise.all([
-      loadTexture(textureCtx, floorTextureUrl, {
-        repeat: { x: 12, y: 12 },
-        colorSpace: 'srgb',
-      }),
-      loadTexture(textureCtx, wallTextureUrl, {
-        repeat: { x: 8, y: 2 },
-        colorSpace: 'srgb',
-      }),
-    ]);
+): void {
+  groundMaterial.color.set(0xffffff);
+  groundMaterial.map = assets.textures.floor;
+  groundMaterial.needsUpdate = true;
 
-    if (generation !== assetLoadGeneration || textureCache !== textureCtx.assetCache) {
-      return;
-    }
-
-    groundMaterial.color.set(0xffffff);
-    groundMaterial.map = groundTexture;
-    groundMaterial.needsUpdate = true;
-
-    wallMaterial.color.set(0xffffff);
-    wallMaterial.map = wallTexture;
-    wallMaterial.needsUpdate = true;
-  } catch (error) {
-    if (generation === assetLoadGeneration) {
-      console.warn('Arcane Engine gameplay texture load failed.', error);
-    }
-  }
+  wallMaterial.color.set(0xffffff);
+  wallMaterial.map = assets.textures.wall;
+  wallMaterial.needsUpdate = true;
 }
 
 function setRootShadows(root: THREE.Object3D): void {
@@ -203,68 +244,80 @@ function setRootShadows(root: THREE.Object3D): void {
   });
 }
 
-async function loadGameplayModels(
+function spawnGameplayProps(
   world: World,
   ctx: ReturnType<typeof getGameContext>['ctx'],
-  cache: AssetCache,
-  generation: number,
-): Promise<void> {
-  try {
-    const [crystalAsset, animatedBeaconAsset] = await Promise.all([
-      loadModel(cache, crystalModelUrl),
-      loadModel(cache, animatedBeaconModelUrl),
-    ]);
+  assets: GameplaySceneAssets,
+): void {
+  const crystalEntities = spawnModelInstances(
+    world,
+    ctx,
+    assets.models.crystal,
+    IMPORTED_PROP_LAYOUT.map((prop) => ({
+      position: { x: prop.x, y: prop.y, z: prop.z },
+      rotation: { y: prop.rotationY },
+      scale: prop.scale,
+    })),
+  );
 
-    if (generation !== assetLoadGeneration || textureCache !== cache) {
-      return;
-    }
-
-    for (const prop of IMPORTED_PROP_LAYOUT) {
-      const entity = spawnModel(world, ctx, crystalAsset, {
-        position: { x: prop.x, y: prop.y, z: prop.z },
-        rotation: { y: prop.rotationY },
-        scale: prop.scale,
-      });
-      const root = getComponent(world, entity, MeshRef)?.mesh;
-      if (root) {
-        setRootShadows(root);
-      }
-    }
-
-    animatedBeaconEntity = spawnModel(world, ctx, animatedBeaconAsset, {
-      position: {
-        x: ANIMATED_BEACON_LAYOUT.x,
-        y: ANIMATED_BEACON_LAYOUT.y,
-        z: ANIMATED_BEACON_LAYOUT.z,
-      },
-      scale: ANIMATED_BEACON_LAYOUT.scale,
-    });
-    const beaconRoot = getComponent(world, animatedBeaconEntity, MeshRef)?.mesh;
-    if (beaconRoot) {
-      setRootShadows(beaconRoot);
-    }
-    playAnimation(world, animatedBeaconEntity, 'Idle', { loop: 'repeat' });
-    animatedBeaconClip = 'Idle';
-  } catch (error) {
-    if (generation === assetLoadGeneration) {
-      console.warn('Arcane Engine gameplay model load failed.', error);
+  for (const entity of crystalEntities) {
+    const root = getComponent(world, entity, MeshRef)?.mesh;
+    if (root) {
+      setRootShadows(root);
     }
   }
+
+  animatedBeaconEntity = spawnModel(world, ctx, assets.models.beacon, {
+    position: {
+      x: ANIMATED_BEACON_LAYOUT.x,
+      y: ANIMATED_BEACON_LAYOUT.y,
+      z: ANIMATED_BEACON_LAYOUT.z,
+    },
+    scale: ANIMATED_BEACON_LAYOUT.scale,
+  });
+  const beaconRoot = getComponent(world, animatedBeaconEntity, MeshRef)?.mesh;
+  if (beaconRoot) {
+    setRootShadows(beaconRoot);
+  }
+  playAnimation(world, animatedBeaconEntity, 'Idle', { loop: 'repeat' });
+  animatedBeaconClip = 'Idle';
+}
+
+export async function preload(preloadContext: ScenePreloadContext = {}): Promise<void> {
+  if (gameplaySceneAssets) {
+    preloadContext.reportProgress?.({
+      loaded: GAMEPLAY_SCENE_ASSET_COUNT,
+      total: GAMEPLAY_SCENE_ASSET_COUNT,
+      label: 'Scene assets ready.',
+    });
+    return;
+  }
+
+  const { ctx } = getGameContext();
+  gameplaySceneAssets = await preloadSceneAssets(
+    ctx,
+    GAMEPLAY_SCENE_ASSET_MANIFEST,
+    {
+      onProgress(progress) {
+        preloadContext.reportProgress?.({
+          loaded: progress.loaded,
+          total: progress.total,
+          label: progress.assetName
+            ? `Loaded ${progress.assetKind} "${progress.assetName}".`
+            : 'Preparing scene assets.',
+        });
+      },
+    },
+  );
 }
 
 export function setup(world: World): void {
   const { ctx } = getGameContext();
+  const assets = getGameplaySceneAssets();
 
   inputHandle = createInputManager(world);
   animatedBeaconEntity = undefined;
   animatedBeaconClip = undefined;
-  textureCache = createTextureCache();
-  const textureCtx = {
-    ...ctx,
-    assetCache: textureCache,
-  } satisfies TextureLoadContext;
-  const generation = assetLoadGeneration + 1;
-  assetLoadGeneration = generation;
 
   const playerGeometry = new THREE.BoxGeometry(1, 1, 1);
   const playerMaterial = new THREE.MeshStandardMaterial({
@@ -395,6 +448,8 @@ export function setup(world: World): void {
   westWall.castShadow = true;
   westWall.receiveShadow = true;
 
+  applyGameplayTextures(assets, groundMaterial, wallMaterial);
+
   sceneObjects = [
     ...environmentLights,
     shadowRig.light,
@@ -415,11 +470,10 @@ export function setup(world: World): void {
   ctx.scene.add(eastWall);
   ctx.scene.add(westWall);
 
-  void loadGameplayTextures(textureCtx, groundMaterial, wallMaterial, generation);
-  void loadGameplayModels(world, ctx, textureCache, generation);
+  spawnGameplayProps(world, ctx, assets);
 
   hud = createHud();
-  document.body.appendChild(hud);
+  document.body.appendChild(hud.root);
   gameplayHudSystem(world, 0);
 
   registerSystem(world, movementSystem(6));
@@ -435,14 +489,13 @@ export function setup(world: World): void {
 
 export function teardown(world: World): void {
   const { ctx } = getGameContext();
-  assetLoadGeneration += 1;
   animatedBeaconEntity = undefined;
   animatedBeaconClip = undefined;
 
   inputHandle?.dispose();
   inputHandle = undefined;
 
-  hud?.remove();
+  hud?.root.remove();
   hud = undefined;
 
   for (const entity of query(world, [MeshRef])) {
@@ -462,9 +515,9 @@ export function teardown(world: World): void {
   }
   materials = [];
 
-  if (textureCache) {
-    disposeAssetCache(textureCache);
-    textureCache = undefined;
+  if (gameplaySceneAssets) {
+    disposeAssetCache(gameplaySceneAssets.cache);
+    gameplaySceneAssets = undefined;
   }
 
   for (const object of sceneObjects) {

@@ -77,11 +77,11 @@ V3 should still stay disciplined. By default it does **not** include:
 
 ### 2.3 Current repo gaps V3 should address
 
-- no official texture workflow yet
-- no official glTF/GLB workflow
-- no reusable asset cache / preload story
+- gameplay primitives are still mostly example-local
+- there is still no official prefab / preload flow
 - much of the current gameplay layer still lives inside `examples/hello-cube`
 - multiplayer works, but visual smoothness and usability can improve
+- the example can still become a clearer small vertical slice
 
 ---
 
@@ -107,7 +107,7 @@ V3 should add one new package immediately and keep one package optional until th
 
 | Package | Status in V3 | Purpose |
 |---------|---------------|---------|
-| `packages/assets` | Stage 15 complete | texture loading, model loading, asset cache, prefab/model spawn helpers, optional animation support |
+| `packages/assets` | Stage 17 complete | texture loading, model loading, asset cache, prefab/model spawn helpers, and animation playback |
 | `packages/gameplay` | optional later in V3 | promote reusable gameplay primitives out of the example only after they are proven stable |
 
 ### 4.2 Proposed dependency graph
@@ -404,6 +404,8 @@ graph product:
 
 ## 10. Stage 18 — Gameplay Primitives Extraction
 
+**Status:** ✅ Complete.
+
 ### Goal
 
 Promote only the most proven gameplay pieces out of the example so asset-ready projects do not need to copy as much boilerplate.
@@ -431,9 +433,22 @@ Do **not** create `packages/gameplay` unless at least two separate example/templ
 - package boundaries stay clean
 - promoted APIs feel general, not overfit to `hello-cube`
 
+### Completion notes
+
+Stage 18 reduced the real duplicated gameplay code in the shipped FPS path without
+creating a premature monorepo gameplay package:
+
+- `examples/hello-cube/scenes/fps-test.ts` and `examples/hello-cube/scenes/multiplayer.ts` now share one example-local FPS scene shell for arena setup, HUD, input, muzzle flash, and teardown
+- `examples/hello-cube/src/fpsPlayerSetup.ts` now holds the shared local-player and game-state spawn helpers used by both FPS scenes
+- `Health` and `Damage` were confirmed as stable primitives, but they remain example-local because there is still only one shipped gameplay example path in the repo
+- `GameState`, damage-zone behavior, respawn flow, HUD copy, and weapon flow remain example-local because they are still tightly coupled to the `hello-cube` demo
+- `packages/gameplay` is still intentionally unshipped; Stage 19+ should only revisit that decision if a second starter or example path clearly needs the same gameplay API
+
 ---
 
 ## 11. Stage 19 — Prefabs, Scene Assets, and Preload Flow
+
+**Status:** ✅ Complete.
 
 ### Goal
 
@@ -469,9 +484,24 @@ Scene-level ergonomics should support:
 - loading state is visible to the player
 - repeated props are easy to spawn without ad hoc loading code scattered through setup
 
+### Completion notes
+
+Stage 19 added a small explicit scene-asset path without turning Arcane Engine
+into a hidden editor or asset database:
+
+- `@arcane-engine/assets` now exports `preloadSceneAssets(...)` for named scene manifests plus loading-progress callbacks
+- `@arcane-engine/assets` now exports `spawnModelInstances(...)` for repeated imported props from one loaded source
+- the runtime still keeps `Scene.setup(world)` synchronous; instead, starter/example runtimes gained a small optional scene `preload()` seam
+- `hello-cube` gameplay now declares its textures and imported models in one place, preloads them before scene entry, shows a simple loading overlay, and uses the preloaded bundle during sync setup
+- predictable teardown still uses the same scene-local `disposeAssetCache(...)` path after meshes/materials are removed
+
+This stage intentionally stopped short of hidden asset registries, editor tooling, or a generalized gameplay package.
+
 ---
 
 ## 12. Stage 20 — Multiplayer Feel Polish
+
+**Status:** ✅ Complete.
 
 ### Goal
 
@@ -498,9 +528,20 @@ Keep the current relay architecture, but make multiplayer feel cleaner and more 
 - disconnects and reconnects are understandable to the player
 - relay protocol stays small and documented
 
+### Completion notes
+
+Stage 20 improved the shipped relay path without turning it into a new networking architecture:
+
+- the relay protocol now stays small but clearer: existing clients get an explicit `join`, and clients can measure ping with `ping` / `pong`
+- `examples/hello-cube/src/networkSyncSystem.ts` now owns a tiny example-local polish layer for remote smoothing, ghost spawn/despawn cues, and bounded auto-reconnect
+- the multiplayer HUD now shows relay state, remote-player count, short-lived join/leave notices, and a latency readout
+- the relay still has no game simulation, authority, rollback, matchmaking, persistence, or anticheat; all gameplay remains client-side and example-local
+
 ---
 
 ## 13. Stage 21 — Hello Cube Becomes a Vertical Slice
+
+**Status:** ✅ Complete.
 
 ### Goal
 
@@ -527,9 +568,21 @@ The sample should still remain readable and modest in size. It should feel like 
 - assets are organized predictably
 - no single scene setup file becomes unreasonably large
 
+### Completion notes
+
+Stage 21 turned `hello-cube` from a polished feature proof into a clearer teaching slice without expanding package scope:
+
+- the title scene now acts as a clickable command deck instead of a keyboard-only prompt wall
+- shared example-local scene copy and presentation helpers now keep title, preload, gameplay, FPS, multiplayer, and touch route selection aligned
+- the gameplay walkthrough now explicitly teaches the Stage 15-19 path through one scene identity instead of reading like a disconnected asset demo
+- FPS and multiplayer still reuse the same Stage 18 / Stage 20 runtime path, but now carry clearer scene identity and onboarding copy
+- `packages/gameplay` still remains intentionally unshipped; Stage 22+ can focus on starter/template ergonomics rather than changing the Stage 21 package boundaries
+
 ---
 
 ## 14. Stage 22 — CLI, Starter Templates, and Agent Workflow
+
+**Status:** ✅ Complete.
 
 ### Goal
 
@@ -562,9 +615,23 @@ Agent-oriented additions:
 - the template docs are enough for a new contributor to place a textured model in a scene quickly
 - the repo remains easy to use as a spec-driven agent project
 
+### Completion notes
+
+Stage 22 shipped the smallest stable template story instead of a template explosion:
+
+- `@arcane-engine/create-arcane` now supports explicit template selection with `starter` and `asset-ready`
+- `templates/asset-ready` is the official preload + texture + model walkthrough, while `starter` stays minimal
+- `packages/create-arcane/scripts/copyTemplate.mjs` now mirrors the full `templates/` directory so repo source-of-truth and packaged output stay aligned
+- root docs and template docs now point readers to the right scaffold path instead of telling them to guess from `hello-cube`
+- new repo docs now cover future stage-prompt structure, Codex / Claude / Cursor task splitting, and the example-local vs package-level checklist
+
+This stage intentionally did not add a generated FPS template or a `packages/gameplay` promotion path. Those still wait on clearer proof that more than one shipped scaffold needs the same gameplay API.
+
 ---
 
 ## 15. Stage 23 — Performance, Stability, and V3 Release
+
+**Status:** ✅ Complete.
 
 ### Goal
 
@@ -593,6 +660,17 @@ Ship V3 as a coherent release instead of a pile of loosely connected features.
 - example scenes teardown without obvious asset leaks
 - docs clearly distinguish shipped V3 features from future ideas
 
+### Completion notes
+
+Stage 23 closed out V3 without turning the repo into a V4 planning pass:
+
+- `@arcane-engine/assets` disposal coverage now explicitly tests cached texture variants and shared model-resource teardown
+- `hello-cube` and the shipped template runtimes now lazy-load scene modules through the existing preload seam so the initial bundle stays focused on the active path
+- `hello-cube` now loads Rapier on demand for physics-backed scenes instead of front-loading it during app boot
+- bundle review showed the remaining large chunk is Rapier's own monolithic browser build; Stage 23 isolates that cost behind scene entry and documents the tradeoff instead of hiding it behind warning-limit changes
+- root docs, agent docs, package READMEs, template docs, and changelog now align around Stage 23 as the V3 closeout
+- root verification passes and the main shipped scaffold paths are expected to verify directly as part of release prep
+
 ---
 
 ## 16. Revised Full Stage List
@@ -605,12 +683,12 @@ Ship V3 as a coherent release instead of a pile of loosely connected features.
 | 15 | Texture Pipeline | ✅ complete | texture loading, cache, material helpers |
 | 16 | 3D Model Loading | ✅ complete | glTF/GLB support, model spawn helpers |
 | 17 | Animation Playback | ✅ complete | clip playback for imported models |
-| 18 | Gameplay Primitives Extraction | proposed | promote proven reusable gameplay pieces |
-| 19 | Prefabs, Scene Assets, and Preload Flow | proposed | manifests, preloading, repeated props |
-| 20 | Multiplayer Feel Polish | proposed | smoothing, connection UX |
-| 21 | Hello Cube Vertical Slice | proposed | polished sample with imported assets |
-| 22 | CLI, Starter Templates, and Agent Workflow | proposed | asset-ready scaffold + stage templates |
-| 23 | Performance, Stability, and V3 Release | proposed | hardening and release criteria |
+| 18 | Gameplay Primitives Extraction | ✅ complete | reduce repeated FPS boilerplate with shared example-local helpers |
+| 19 | Prefabs, Scene Assets, and Preload Flow | ✅ complete | manifests, preloading, repeated props |
+| 20 | Multiplayer Feel Polish | ✅ complete | smoothing, connection UX |
+| 21 | Hello Cube Vertical Slice | ✅ complete | polished sample with imported assets |
+| 22 | CLI, Starter Templates, and Agent Workflow | ✅ complete | asset-ready scaffold + stage templates |
+| 23 | Performance, Stability, and V3 Release | ✅ complete | hardening, bundle review, and V3 closeout |
 
 ---
 
@@ -652,6 +730,8 @@ V3 is complete when:
 - multiplayer remains functional and feels smoother than V2
 - root docs, agent docs, and package docs all match the shipped code
 - `pnpm test`, `pnpm typecheck`, and `pnpm build` pass from repo root
+
+That definition of done is now met in the repo.
 
 ---
 

@@ -20,7 +20,7 @@ import { getGameContext } from '../src/runtime/gameContext.js';
 import { requestSceneChange } from '../src/runtime/sceneTransitions.js';
 
 let inputHandle: ReturnType<typeof createInputManager> | undefined;
-let mesh: THREE.Mesh | null = null;
+let mesh: THREE.Object3D | null = null;
 let geometry: THREE.BufferGeometry | undefined;
 let material: THREE.Material | undefined;
 let ground: THREE.Mesh | null = null;
@@ -67,7 +67,7 @@ export function setup(world: World): void {
   const cubeEntity = spawnMesh(world, ctx, geometry, material, { x: 0, y: 0.5, z: 0 });
   addComponent(world, cubeEntity, Controllable);
   mesh = getComponent(world, cubeEntity, MeshRef)?.mesh ?? null;
-  if (mesh) {
+  if (mesh instanceof THREE.Mesh) {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
   }

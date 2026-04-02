@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createArcaneProject } from '../src/index.js';
+import { createArcaneProject, listArcaneTemplates } from '../src/index.js';
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -19,6 +19,19 @@ afterEach(async () => {
 });
 
 describe('createArcaneProject', () => {
+  it('lists the shipped templates', () => {
+    expect(listArcaneTemplates()).toEqual([
+      {
+        name: 'starter',
+        description: 'Minimal ECS + scene-transition starter.',
+      },
+      {
+        name: 'asset-ready',
+        description: 'Textured scene + model + preload walkthrough.',
+      },
+    ]);
+  });
+
   it('copies the starter template and replaces scaffold placeholders', async () => {
     const cwd = await createTempDir();
 
@@ -30,6 +43,7 @@ describe('createArcaneProject', () => {
     });
 
     expect(result.projectName).toBe('my-game');
+    expect(result.template).toBe('starter');
     expect(result.installed).toBe(false);
     expect(result.started).toBe(false);
     expect(result.dependencyMode).toBe('published');
@@ -61,6 +75,31 @@ describe('createArcaneProject', () => {
     await expect(readFile(path.join(result.targetDir, 'src', 'main.ts'), 'utf8')).resolves.toContain(
       "import { createGameLoop, createSceneManager, createWorld, runSystems } from '@arcane-engine/core';",
     );
+  });
+
+  it('copies the asset-ready template when requested', async () => {
+    const cwd = await createTempDir();
+
+    const result = await createArcaneProject({
+      cwd,
+      destination: 'asset-game',
+      template: 'asset-ready',
+      install: false,
+      start: false,
+    });
+
+    expect(result.projectName).toBe('asset-game');
+    expect(result.template).toBe('asset-ready');
+
+    await expect(
+      readFile(path.join(result.targetDir, 'README.md'), 'utf8'),
+    ).resolves.toContain('# asset-game');
+    await expect(
+      readFile(path.join(result.targetDir, 'scenes', 'gameplay.ts'), 'utf8'),
+    ).resolves.toContain('preloadSceneAssets');
+    await expect(
+      readFile(path.join(result.targetDir, 'src', 'assets', 'arcane-beacon.gltf'), 'utf8'),
+    ).resolves.toContain('"animations"');
   });
 
   it('refuses to overwrite a non-empty destination directory', async () => {
@@ -183,6 +222,22 @@ describe('createArcaneProject', () => {
       }),
     ).rejects.toThrow(
       'createArcaneProject: project names must use lowercase letters, numbers, and hyphens only',
+    );
+  });
+
+  it('rejects unknown template names', async () => {
+    const cwd = await createTempDir();
+
+    await expect(
+      createArcaneProject({
+        cwd,
+        destination: 'my-game',
+        template: 'fps' as never,
+        install: false,
+        start: false,
+      }),
+    ).rejects.toThrow(
+      'createArcaneProject: unknown template "fps". Available templates: starter, asset-ready',
     );
   });
 });

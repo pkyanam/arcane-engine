@@ -102,6 +102,37 @@ describe('loadTexture', () => {
     expect(disposeSpy).toHaveBeenCalled();
   });
 
+  it('disposes the cached source texture and each cached variant exactly once', async () => {
+    const cache = createTextureCache();
+    const ctx = makeTextureContext(cache);
+    const baseTexture = makeTexture('base');
+    const repeatedVariant = makeTexture('repeated');
+    const clampedVariant = makeTexture('clamped');
+    const clone = vi
+      .fn<() => THREE.Texture>()
+      .mockReturnValueOnce(repeatedVariant)
+      .mockReturnValueOnce(clampedVariant);
+    baseTexture.clone = clone;
+
+    vi.spyOn(THREE.TextureLoader.prototype, 'loadAsync').mockResolvedValue(baseTexture);
+
+    await loadTexture(ctx, '/textures/floor.png', {
+      repeat: { x: 4, y: 4 },
+    });
+    await loadTexture(ctx, '/textures/floor.png', {
+      wrapX: 'clamp',
+      wrapY: 'clamp',
+      colorSpace: 'none',
+    });
+
+    disposeAssetCache(cache);
+
+    expect(clone).toHaveBeenCalledTimes(2);
+    expect(baseTexture.dispose).toHaveBeenCalledTimes(1);
+    expect(repeatedVariant.dispose).toHaveBeenCalledTimes(1);
+    expect(clampedVariant.dispose).toHaveBeenCalledTimes(1);
+  });
+
   it('rejects new loads after a cache has been disposed', async () => {
     const cache = createTextureCache();
     const ctx = makeTextureContext(cache);

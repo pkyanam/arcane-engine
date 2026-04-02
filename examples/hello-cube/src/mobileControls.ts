@@ -1,6 +1,7 @@
 import { getComponent, query } from '@arcane-engine/core';
 import type { World } from '@arcane-engine/core';
 import { InputState } from '@arcane-engine/input';
+import { listHelloCubeRouteEntries } from './helloCubePresentation.js';
 import { getGameContext } from './runtime/gameContext.js';
 import { requestSceneChange } from './runtime/sceneTransitions.js';
 
@@ -396,10 +397,7 @@ export function installMobileControls(world: World): void {
     return b;
   };
   panelTitle.append(
-    mkScene('Play', 'gameplay'),
-    mkScene('Physics', 'physics'),
-    mkScene('FPS', 'fps-test'),
-    mkScene('Multi', 'multiplayer'),
+    ...listHelloCubeRouteEntries().map((entry) => mkScene(entry.menuLabel, entry.sceneName)),
   );
 
   panelPlay = el('div', 'arcane-mobile__panel arcane-mobile__panel--play');

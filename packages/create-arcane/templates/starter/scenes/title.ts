@@ -16,7 +16,7 @@ import { requestSceneChange } from '../src/runtime/sceneTransitions.js';
 
 let overlay: HTMLDivElement | undefined;
 let inputHandle: ReturnType<typeof createInputManager> | undefined;
-let mesh: THREE.Mesh | null = null;
+let mesh: THREE.Object3D | null = null;
 let geometry: THREE.BufferGeometry | undefined;
 let material: THREE.Material | undefined;
 let sceneObjects: THREE.Object3D[] = [];
@@ -42,7 +42,7 @@ export function setup(world: World): void {
   const entity = spawnMesh(world, ctx, geometry, material, { x: 0, y: 0, z: 0 });
   addComponent(world, entity, Spin, { axis: 'y', speed: 1.2 });
   mesh = getComponent(world, entity, MeshRef)?.mesh ?? null;
-  if (mesh) {
+  if (mesh instanceof THREE.Mesh) {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
   }

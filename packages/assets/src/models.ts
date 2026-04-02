@@ -46,6 +46,21 @@ export interface SpawnModelOptions {
   scale?: number | Partial<Vector3Like>;
 }
 
+/**
+ * Spawn a loaded model multiple times from one already-loaded source asset.
+ *
+ * This is a small repeated-prop helper for scenes that want one imported
+ * source plus a readable placement list.
+ */
+export function spawnModelInstances(
+  world: World,
+  ctx: RendererContext,
+  modelAsset: ModelAsset,
+  instances: readonly SpawnModelOptions[],
+): Entity[] {
+  return instances.map((instance) => spawnModel(world, ctx, modelAsset, instance));
+}
+
 interface ModelAssetState {
   disposed: boolean;
   readonly template: THREE.Object3D;

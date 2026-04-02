@@ -3,8 +3,10 @@ import { createSceneRegistry, discoverScenes } from '../src/runtime/sceneRegistr
 
 describe('createSceneRegistry', () => {
   it('derives scene names from file paths', () => {
+    const preload = async (): Promise<void> => {};
     const scenes = createSceneRegistry({
       '../../scenes/title.ts': {
+        preload,
         setup: () => {},
       },
       '../../scenes/gameplay.ts': {
@@ -13,6 +15,7 @@ describe('createSceneRegistry', () => {
     });
 
     expect(Object.keys(scenes).sort()).toEqual(['gameplay', 'title']);
+    expect(scenes.title.preload).toBe(preload);
   });
 
   it('throws when a scene module does not export setup', () => {
@@ -23,6 +26,25 @@ describe('createSceneRegistry', () => {
         },
       }),
     ).toThrow('createSceneRegistry: ../../scenes/broken.ts is missing a setup export');
+  });
+
+  it('loads lazy scene modules during preload and reuses them for setup', async () => {
+    const events: string[] = [];
+    const scenes = createSceneRegistry({
+      '../../scenes/gameplay.ts': async () => ({
+        preload: async () => {
+          events.push('preload');
+        },
+        setup: () => {
+          events.push('setup');
+        },
+      }),
+    });
+
+    await scenes.gameplay.preload?.();
+    scenes.gameplay.setup({} as never);
+
+    expect(events).toEqual(['preload', 'setup']);
   });
 });
 

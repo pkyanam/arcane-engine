@@ -1,170 +1,73 @@
-import { addComponent, createEntity, getComponent, query, registerSystem } from '@arcane-engine/core';
+import { registerSystem } from '@arcane-engine/core';
 import type { World } from '@arcane-engine/core';
 import {
-  BoxCollider,
-  CharacterController,
   characterControllerSystem,
-  createPhysicsContext,
   physicsSystem,
-  RigidBody,
 } from '@arcane-engine/physics';
-import type { PhysicsContext } from '@arcane-engine/physics';
-import {
-  Controllable,
-  createInputManager,
-  fpsCameraSystem,
-  FPSCamera,
-} from '@arcane-engine/input';
-import { MeshRef, Position, renderSystem } from '@arcane-engine/renderer';
+import { fpsCameraSystem } from '@arcane-engine/input';
+import { renderSystem } from '@arcane-engine/renderer';
 import {
   DAMAGE_ZONE_FPS,
   PLAYER_JUMP_SPEED,
   PLAYER_MOVE_SPEED,
   PLAYER_SPAWN,
-  spawnFpsArenaLights,
-  spawnFpsArenaWorld,
-  type FpsArenaBuckets,
 } from '../src/fpsArenaSetup.js';
-import { Health } from '../src/components/health.js';
-import { GameState } from '../src/components/gameState.js';
 import { damageZoneSystem } from '../src/damageZoneSystem.js';
-import { createArcaneHud, createMuzzleLayer } from '../src/fpsHud.js';
+import { ensurePhysicsReady } from '../src/ensurePhysicsReady.js';
 import { gameStateSystem } from '../src/gameStateSystem.js';
-import { getGameContext } from '../src/runtime/gameContext.js';
-import { requestSceneChange } from '../src/runtime/sceneTransitions.js';
+import { getHelloCubeSceneCopy } from '../src/helloCubePresentation.js';
+import { spawnFpsGameState, spawnFpsPlayerRig } from '../src/fpsPlayerSetup.js';
+import {
+  setupSharedFpsScene,
+  type SharedFpsSceneRuntime,
+} from '../src/fpsSceneRuntime.js';
 import { healthSystem } from '../src/healthSystem.js';
 import { hitFlashRestoreSystem } from '../src/hitFlashRestoreSystem.js';
 import { weaponSystem } from '../src/weaponSystem.js';
 
-let physicsCtx: PhysicsContext | undefined;
-let inputHandle: ReturnType<typeof createInputManager> | undefined;
-const buckets: FpsArenaBuckets = { geometries: [], materials: [], sceneObjects: [] };
-let hudRoot: HTMLDivElement | undefined;
-let muzzleLayer: HTMLDivElement | undefined;
-let muzzleTimeout: ReturnType<typeof setTimeout> | undefined;
-let escListener: ((e: KeyboardEvent) => void) | undefined;
+let shared: SharedFpsSceneRuntime | undefined;
+const FPS_TEST_COPY = getHelloCubeSceneCopy('fps-test');
 
-function triggerMuzzleFlash(): void {
-  if (!muzzleLayer) return;
-  if (muzzleTimeout !== undefined) {
-    clearTimeout(muzzleTimeout);
-    muzzleTimeout = undefined;
-  }
-  muzzleLayer.style.opacity = '0.28';
-  muzzleTimeout = setTimeout(() => {
-    muzzleLayer!.style.opacity = '0';
-    muzzleTimeout = undefined;
-  }, 80);
+export async function preload(): Promise<void> {
+  await ensurePhysicsReady();
 }
 
 export function setup(world: World): void {
-  const { ctx } = getGameContext();
-
-  physicsCtx = createPhysicsContext();
-  inputHandle = createInputManager(world, ctx.renderer.domElement);
-
-  spawnFpsArenaLights(ctx, buckets.sceneObjects);
-  spawnFpsArenaWorld(world, ctx, buckets);
-
-  const player = createEntity(world);
-  addComponent(world, player, Position, { ...PLAYER_SPAWN });
-  addComponent(world, player, RigidBody, { type: 'kinematic' });
-  addComponent(world, player, BoxCollider, { hx: 0.4, hy: 0.9, hz: 0.4 });
-  addComponent(world, player, FPSCamera, { yaw: 0, pitch: 0, height: 1.7 });
-  addComponent(world, player, CharacterController, {
-    speed: PLAYER_MOVE_SPEED,
-    jumpSpeed: PLAYER_JUMP_SPEED,
-    grounded: false,
-    _velocityY: 0,
-  });
-  addComponent(world, player, Controllable);
-  addComponent(world, player, Health, { current: 10, max: 10 });
-
-  const gameStateEntity = createEntity(world);
-  addComponent(world, gameStateEntity, GameState, {
-    kills: 0,
-    playerHp: 10,
-    phase: 'playing',
+  shared = setupSharedFpsScene(world, {
+    hintText: FPS_TEST_COPY.controlHint,
+    sceneEyebrow: FPS_TEST_COPY.eyebrow,
+    sceneTitle: FPS_TEST_COPY.displayName,
+    sceneSummary: FPS_TEST_COPY.summary,
+    sceneBadges: FPS_TEST_COPY.badges,
   });
 
-  ctx.camera.position.set(0, 3.7, 0);
-  ctx.camera.rotation.set(0, 0, 0, 'YXZ');
-
-  escListener = (e: KeyboardEvent) => {
-    if (e.code === 'Escape') {
-      requestSceneChange('title');
-    }
-  };
-  window.addEventListener('keydown', escListener);
-
-  const hud = createArcaneHud(
-    'Click canvas to capture mouse — WASD move, Space jump, shoot targets (3 hits each). Glowing red floor pad in the +X,+Z corner hurts. R respawn when dead. Esc → title.',
-  );
-  hudRoot = hud.root;
-  document.body.appendChild(hudRoot);
-
-  muzzleLayer = createMuzzleLayer();
-  document.body.appendChild(muzzleLayer);
+  spawnFpsPlayerRig(world);
+  spawnFpsGameState(world);
 
   registerSystem(world, hitFlashRestoreSystem());
-  registerSystem(world, physicsSystem(physicsCtx));
-  registerSystem(world, characterControllerSystem(physicsCtx));
-  registerSystem(world, fpsCameraSystem(ctx));
+  registerSystem(world, physicsSystem(shared.physicsCtx));
+  registerSystem(world, characterControllerSystem(shared.physicsCtx));
+  registerSystem(world, fpsCameraSystem(shared.ctx));
   registerSystem(
     world,
-    weaponSystem(physicsCtx, {
-      onFire: triggerMuzzleFlash,
+    weaponSystem(shared.physicsCtx, {
+      onFire: () => shared?.triggerMuzzleFlash(),
     }),
   );
   registerSystem(world, damageZoneSystem(DAMAGE_ZONE_FPS));
-  registerSystem(world, healthSystem(physicsCtx, ctx));
+  registerSystem(world, healthSystem(shared.physicsCtx, shared.ctx));
   registerSystem(
     world,
-    gameStateSystem(physicsCtx, hud.handles, {
+    gameStateSystem(shared.physicsCtx, shared.hud.handles, {
       spawn: PLAYER_SPAWN,
       moveSpeed: PLAYER_MOVE_SPEED,
       jumpSpeed: PLAYER_JUMP_SPEED,
     }),
   );
-  registerSystem(world, renderSystem(ctx));
+  registerSystem(world, renderSystem(shared.ctx));
 }
 
 export function teardown(world: World): void {
-  const { ctx } = getGameContext();
-
-  document.exitPointerLock();
-
-  if (escListener) {
-    window.removeEventListener('keydown', escListener);
-    escListener = undefined;
-  }
-
-  inputHandle?.dispose();
-  inputHandle = undefined;
-
-  hudRoot?.remove();
-  hudRoot = undefined;
-
-  if (muzzleTimeout !== undefined) {
-    clearTimeout(muzzleTimeout);
-    muzzleTimeout = undefined;
-  }
-  muzzleLayer?.remove();
-  muzzleLayer = undefined;
-
-  for (const entity of query(world, [MeshRef])) {
-    const meshRef = getComponent(world, entity, MeshRef);
-    if (meshRef?.mesh) ctx.scene.remove(meshRef.mesh);
-  }
-
-  for (const geo of buckets.geometries) geo.dispose();
-  buckets.geometries.length = 0;
-
-  for (const mat of buckets.materials) mat.dispose();
-  buckets.materials.length = 0;
-
-  for (const obj of buckets.sceneObjects) ctx.scene.remove(obj);
-  buckets.sceneObjects.length = 0;
-
-  physicsCtx = undefined;
+  shared?.dispose(world);
+  shared = undefined;
 }

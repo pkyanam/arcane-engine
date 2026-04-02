@@ -15,6 +15,14 @@ export type {
   SpawnModelOptions,
 } from './models.js';
 export type {
+  PreloadSceneAssetsOptions,
+  SceneAssetBundle,
+  SceneAssetLoadProgress,
+  SceneAssetManifest,
+  SceneModelAssetDefinition,
+  SceneTextureAssetDefinition,
+} from './sceneAssets.js';
+export type {
   AnimationLoopMode,
   AnimationPlayerState,
   PlayAnimationOptions,
@@ -37,4 +45,8 @@ export {
   getModelAnimationClipNames,
   loadModel,
   spawnModel,
+  spawnModelInstances,
 } from './models.js';
+export {
+  preloadSceneAssets,
+} from './sceneAssets.js';

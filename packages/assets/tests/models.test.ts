@@ -9,6 +9,7 @@ import {
   disposeAssetCache,
   loadModel,
   spawnModel,
+  spawnModelInstances,
 } from '../src/index.js';
 
 function makeRendererContext(): RendererContext {
@@ -29,6 +30,22 @@ function makeLoadedModel(name = 'ArcaneCrystal'): THREE.Group {
   const mesh = new THREE.Mesh(geometry, material);
   mesh.position.y = 1.25;
   group.add(mesh);
+
+  return group;
+}
+
+function makeLoadedModelWithSharedResources(name = 'SharedCrystal'): THREE.Group {
+  const group = new THREE.Group();
+  group.name = name;
+
+  const geometry = new THREE.BoxGeometry(1, 2, 1);
+  const texture = new THREE.Texture();
+  const material = new THREE.MeshStandardMaterial({ color: 0x38bdf8, map: texture });
+  const leftMesh = new THREE.Mesh(geometry, material);
+  const rightMesh = new THREE.Mesh(geometry, material);
+  leftMesh.position.x = -1;
+  rightMesh.position.x = 1;
+  group.add(leftMesh, rightMesh);
 
   return group;
 }
@@ -85,6 +102,33 @@ describe('loadModel', () => {
       .mockResolvedValue({ scene } as Awaited<ReturnType<GLTFLoader['loadAsync']>>);
 
     await loadModel(cache, '/models/crystal.glb');
+    disposeAssetCache(cache);
+
+    expect(geometryDispose).toHaveBeenCalledTimes(1);
+    expect(materialDispose).toHaveBeenCalledTimes(1);
+    expect(textureDispose).toHaveBeenCalledTimes(1);
+  });
+
+  it('disposes shared model resources only once when meshes reuse them', async () => {
+    const cache = createTextureCache();
+    const scene = makeLoadedModelWithSharedResources();
+    const firstMesh = scene.children[0] as THREE.Mesh;
+    const secondMesh = scene.children[1] as THREE.Mesh;
+    const firstMaterial = firstMesh.material as THREE.MeshStandardMaterial;
+    const secondMaterial = secondMesh.material as THREE.MeshStandardMaterial;
+
+    expect(firstMesh.geometry).toBe(secondMesh.geometry);
+    expect(firstMaterial).toBe(secondMaterial);
+
+    const geometryDispose = vi.spyOn(firstMesh.geometry, 'dispose');
+    const materialDispose = vi.spyOn(firstMaterial, 'dispose');
+    const textureDispose = vi.spyOn(firstMaterial.map!, 'dispose');
+
+    vi
+      .spyOn(GLTFLoader.prototype, 'loadAsync')
+      .mockResolvedValue({ scene } as Awaited<ReturnType<GLTFLoader['loadAsync']>>);
+
+    await loadModel(cache, '/models/shared-crystal.glb');
     disposeAssetCache(cache);
 
     expect(geometryDispose).toHaveBeenCalledTimes(1);
@@ -152,5 +196,26 @@ describe('spawnModel', () => {
     expect(() => spawnModel(createWorld(), makeRendererContext(), asset)).toThrow(
       'spawnModel: model asset has already been disposed',
     );
+  });
+
+  it('spawns repeated instances from one loaded model source', async () => {
+    const cache = createTextureCache();
+    vi
+      .spyOn(GLTFLoader.prototype, 'loadAsync')
+      .mockResolvedValue({ scene: makeLoadedModel() } as Awaited<ReturnType<GLTFLoader['loadAsync']>>);
+
+    const asset = await loadModel(cache, '/models/crystal.glb');
+    const world = createWorld();
+    const ctx = makeRendererContext();
+
+    const entities = spawnModelInstances(world, ctx, asset, [
+      { position: { x: -2, y: 1, z: 4 }, scale: 1.25 },
+      { position: { x: 3, y: 1.5, z: -6 }, rotation: { y: Math.PI / 2 }, scale: 0.9 },
+    ]);
+
+    expect(entities).toHaveLength(2);
+    expect(getComponent(world, entities[0]!, Position)).toEqual({ x: -2, y: 1, z: 4 });
+    expect(getComponent(world, entities[1]!, Rotation)).toEqual({ x: 0, y: Math.PI / 2, z: 0 });
+    expect(getComponent(world, entities[1]!, Scale)).toEqual({ x: 0.9, y: 0.9, z: 0.9 });
   });
 });

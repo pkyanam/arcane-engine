@@ -24,7 +24,9 @@ Core model:
 
 **Roadmap:** [`ARCANE_ENGINE_PRD_V2.md`](./ARCANE_ENGINE_PRD_V2.md) describes the shipped **multiplayer first-person shooter** track (Stages 1–12). [`ARCANE_ENGINE_PRD_V3.md`](./ARCANE_ENGINE_PRD_V3.md) proposes the post-V2 roadmap. If a checklist table lags the repo, treat the codebase and tests as the source of truth.
 
-**Current stage:** **V2.0 is shipped**, **Stage 13 is complete**, **Stage 14 is complete**, **Stage 15 is complete**, and **Stage 16 is complete**. The default next step is **Stage 17: Animation Playback**. Shipped surface includes **`packages/assets`**, the **`packages/server`** relay, **`networkSyncSystem`**, **`multiplayer`** scene (**M**), shared **`fpsArenaSetup`** / **`fpsHud`**, **`VITE_WS_URL`**, **`mobileControls`** on touch devices, textured `hello-cube` gameplay, imported **glTF / GLB** props via **`loadModel(...)`** / **`spawnModel(...)`**, and the Stage 14 renderer defaults / lighting helpers.
+**Current stage:** **V2.0 is shipped**, **Stages 13–23 of PRD V3 are complete**, and the current V3 roadmap is closed out. Shipped surface includes **`packages/assets`**, the **`packages/server`** relay, **`networkSyncSystem`**, **`multiplayer`** scene (**M**), shared example-local **`fpsArenaSetup`** / **`fpsHud`** / **`fpsSceneRuntime`** / **`fpsPlayerSetup`**, shared example-local **`helloCubePresentation`** scene copy/theme helpers, a clickable `hello-cube` command deck, smoothed remote ghosts, relay **`join`** plus **`ping`** / **`pong`**, **`VITE_WS_URL`**, **`mobileControls`** on touch devices, textured `hello-cube` gameplay, named scene asset manifests via **`preloadSceneAssets(...)`**, repeated imported props via **`spawnModelInstances(...)`**, imported **glTF / GLB** props via **`loadModel(...)`** / **`spawnModel(...)`**, animation playback via **`AnimationPlayer`** / **`animationSystem()`** / **`playAnimation(...)`**, Stage 23 lazy scene-module loading in shipped runtimes, hello-cube on-demand Rapier loading for physics scenes, the Stage 14 renderer defaults / lighting helpers, `create-arcane` template choices via **`starter`** and **`asset-ready`**, and the Stage 22 workflow docs in **`docs/`**.
+
+**Workflow docs:** use [`docs/STAGE_TEMPLATE.md`](./docs/STAGE_TEMPLATE.md) for future stage prompts and [`docs/AGENT_WORKFLOW.md`](./docs/AGENT_WORKFLOW.md) for task splitting plus the example-local vs package-level checklist.
 
 ---
 
@@ -66,7 +68,7 @@ arcane-engine/
 |---------|----------------|
 | `@arcane-engine/core` | ECS primitives, query engine, system registration, game loop, scene lifecycle |
 | `@arcane-engine/renderer` | Three.js integration, render components, renderer setup, mesh spawning |
-| `@arcane-engine/assets` | Texture loading, glTF / GLB loading, cache reuse, model spawn helpers, and explicit disposal helpers |
+| `@arcane-engine/assets` | Texture loading, glTF / GLB loading, scene asset manifests, loading progress hooks, repeated model spawn helpers, animation playback helpers, and explicit disposal helpers |
 | `@arcane-engine/input` | Input components, DOM bridge, movement, camera follow, FPS look / pointer lock |
 | `@arcane-engine/physics` | Rapier world, rigid bodies (fixed / dynamic / kinematic), box colliders, `raycast`, character controller |
 | `@arcane-engine/create-arcane` | scaffolds a starter project from `templates/starter` |
@@ -180,6 +182,23 @@ CharacterController
 startRelayServer(options?): { httpServer; wss; port; close(): Promise<void> }
 ```
 
+### `@arcane-engine/assets`
+
+```ts
+createTextureCache(): AssetCache
+disposeAssetCache(cache): void
+loadTexture(ctx, source, options?): Promise<Texture>
+loadModel(cache, source): Promise<ModelAsset>
+preloadSceneAssets(ctx, manifest, options?): Promise<SceneAssetBundle>
+getModelAnimationClipNames(modelAsset): string[]
+spawnModel(world, ctx, modelAsset, options?): Entity
+spawnModelInstances(world, ctx, modelAsset, instances): Entity[]
+AnimationPlayer
+animationSystem(): SystemFn
+playAnimation(world, entity, clipName, options?): AnimationAction
+stopAnimation(world, entity, options?): void
+```
+
 ---
 
 ## Coding Conventions
@@ -256,9 +275,11 @@ The README should stay understandable to someone who is new to browser game tool
 - Stages **1–12** of the **PRD V2** FPS track are implemented, including **`packages/server`** and **`multiplayer`** (ghost sync + relayed shoot)
 - `packages/physics`: Rapier WASM, fixed/dynamic/**kinematic** bodies, box colliders, gravity sync for dynamic bodies, **`raycast()`**, **`CharacterController`** + **`characterControllerSystem`**
 - `packages/input`: **`FPSCamera`**, **`fpsCameraSystem`**, **`fpsMovementSystem`**, **`InputState.mouseButtons`**, optional canvas + **pointer lock** in `createInputManager`
-- `examples/hello-cube`: scenes **`title`**, **`gameplay`**, **`physics`** (P), **`fps-test`** (F), **`multiplayer`** (M); textured gameplay floor/walls use the official Stage 15 workflow; gameplay also places imported `.glb` crystal props through the official Stage 16 workflow; **`mobileControls`** touch overlay when `pointer: coarse` or `maxTouchPoints`; `main.ts` awaits **`initPhysics()`**; root **`pnpm test`** builds **core → renderer → assets → input → physics → server** before workspace tests
+- `examples/hello-cube`: scenes **`title`**, **`gameplay`**, **`physics`** (P), **`fps-test`** (F), **`multiplayer`** (M); textured gameplay floor/walls use the official Stage 15 workflow; gameplay also places imported `.glb` crystal props through the official Stage 16 workflow and an animated imported beacon through the official Stage 17 workflow; shared example-local FPS helpers now live in `fpsSceneRuntime.ts` and `fpsPlayerSetup.ts`; **`mobileControls`** touch overlay when `pointer: coarse` or `maxTouchPoints`; scene modules now lazy-load, and physics-backed scenes preload Rapier on demand instead of `main.ts` awaiting **`initPhysics()`**; root **`pnpm test`** builds **core → renderer → assets → input → physics → server** before workspace tests
+- Stage 21 keeps that same feature set example-local but now presents it as one teaching slice via a clearer command deck, shared scene copy/theme helpers, and scene-to-scene onboarding polish
 - Stage 14 renderer upgrade: `createRenderer()` supports background / clear color / max pixel ratio / shadow defaults, provided canvases resize correctly, and the renderer exports beginner-friendly environment + directional shadow helpers
-- Stage 15 texture pipeline + Stage 16 model loading: `@arcane-engine/assets` exports `createTextureCache()`, `loadTexture(...)`, `loadModel(...)`, `spawnModel(...)`, and `disposeAssetCache(...)`; texture and model source reuse is cached and teardown guidance is documented
+- Stage 15 texture pipeline + Stage 16 model loading + Stage 17 animation playback + Stage 19 scene assets: `@arcane-engine/assets` exports `createTextureCache()`, `loadTexture(...)`, `loadModel(...)`, `spawnModel(...)`, `spawnModelInstances(...)`, `preloadSceneAssets(...)`, `AnimationPlayer`, `animationSystem()`, `playAnimation(...)`, `stopAnimation(...)`, and `disposeAssetCache(...)`; texture and model source reuse is cached, animated model instances get mixer-backed clip playback, loading progress hooks support simple overlays, and teardown guidance is documented
+- Stage 18 gameplay extraction: repeated FPS scene setup moved into shared example-local helpers; `Health` / `Damage` remain example-local, and `packages/gameplay` is still intentionally unshipped
 - `packages/create-arcane` and `templates/starter` verified locally
 - public package APIs documented with JSDoc
 - repo verification from root: `pnpm test`, `pnpm typecheck`, `pnpm build`
@@ -313,11 +334,12 @@ Scopes: `core`, `renderer`, `input`, `physics`, `server`, `create-arcane`, `exam
 
 Aligned with **PRD V2 §1.3** and post–V2 ideas:
 
-- full asset pipeline / GLTF loading (procedural meshes are fine for now)
+- full asset pipeline / hidden asset database
 - audio
 - anticheat / production networking product
 - mobile- or gamepad-first product scope (demo touch overlay in hello-cube is not a full mobile pipeline)
 - accounts, matchmaking, large lobbies
+- retargeting, blend trees, or animation graph tooling by default
 - WebGPU renderer swap
 - generic plugin marketplace
 

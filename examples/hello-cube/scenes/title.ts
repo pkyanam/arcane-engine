@@ -4,12 +4,17 @@ import { createInputManager, InputState } from '@arcane-engine/input';
 import {
   addDirectionalShadowLight,
   addEnvironmentLighting,
-  renderSystem,
-  spawnMesh,
   MeshRef,
+  renderSystem,
   Spin,
+  spawnMesh,
 } from '@arcane-engine/renderer';
 import * as THREE from 'three';
+import {
+  createHelloCubePanel,
+  ensureHelloCubeUiStyles,
+  listHelloCubeRouteEntries,
+} from '../src/helloCubePresentation.js';
 import { spinSystem } from '../src/spinSystem.js';
 import { getGameContext } from '../src/runtime/gameContext.js';
 import { requestSceneChange } from '../src/runtime/sceneTransitions.js';
@@ -19,59 +24,103 @@ let inputHandle: ReturnType<typeof createInputManager> | undefined;
 let sceneObjects: THREE.Object3D[] = [];
 let geometries: THREE.BufferGeometry[] = [];
 let materials: THREE.Material[] = [];
+const TITLE_ROUTE_ENTRIES = listHelloCubeRouteEntries();
 
 const titleInputSystem: SystemFn = (world: World): void => {
   for (const entity of query(world, [InputState])) {
     const input = getComponent(world, entity, InputState)!;
 
-    if (input.keys.has('Enter')) {
-      requestSceneChange('gameplay');
-    }
-    if (input.keys.has('KeyP')) {
-      requestSceneChange('physics');
-    }
-    if (input.keys.has('KeyF')) {
-      requestSceneChange('fps-test');
-    }
-    if (input.keys.has('KeyM')) {
-      requestSceneChange('multiplayer');
+    for (const entry of TITLE_ROUTE_ENTRIES) {
+      if (entry.hotkeyCodes.some((code) => input.keys.has(code))) {
+        requestSceneChange(entry.sceneName);
+        return;
+      }
     }
   }
 };
 
+function createSceneRouteButton(entry: (typeof TITLE_ROUTE_ENTRIES)[number]): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'arcane-ui-scene-button';
+
+  const topline = document.createElement('div');
+  topline.className = 'arcane-ui-scene-button__topline';
+
+  const eyebrow = document.createElement('p');
+  eyebrow.className = 'arcane-ui-scene-button__eyebrow';
+  eyebrow.textContent = entry.eyebrow;
+
+  const key = document.createElement('span');
+  key.className = 'arcane-ui-scene-button__key';
+  key.textContent = entry.hotkeyLabel;
+
+  topline.append(eyebrow, key);
+
+  const title = document.createElement('h3');
+  title.className = 'arcane-ui-scene-button__title';
+  title.textContent = entry.displayName;
+
+  const summary = document.createElement('p');
+  summary.className = 'arcane-ui-scene-button__summary';
+  summary.textContent = entry.summary;
+
+  const badges = document.createElement('div');
+  badges.className = 'arcane-ui-badges';
+
+  if (entry.recommended) {
+    const recommendedBadge = document.createElement('span');
+    recommendedBadge.className = 'arcane-ui-badge';
+    recommendedBadge.dataset.emphasis = 'true';
+    recommendedBadge.textContent = 'Recommended First';
+    badges.appendChild(recommendedBadge);
+  }
+
+  for (const label of entry.badges.slice(0, 2)) {
+    const badge = document.createElement('span');
+    badge.className = 'arcane-ui-badge';
+    badge.textContent = label;
+    badges.appendChild(badge);
+  }
+
+  button.append(topline, title, summary, badges);
+  button.addEventListener('click', () => {
+    requestSceneChange(entry.sceneName);
+  });
+  return button;
+}
+
 function createOverlay(): HTMLDivElement {
+  ensureHelloCubeUiStyles();
+
   const element = document.createElement('div');
-  element.innerHTML =
-    '<div style="display:grid;gap:16px;justify-items:center;">' +
-    '<p style="margin:0;font-size:12px;letter-spacing:0.45em;color:#7dd3fc;">HELLO CUBE DEMO</p>' +
-    '<h1 style="margin:0;font-size:clamp(40px,9vw,84px);letter-spacing:0.12em;">Arcane Engine</h1>' +
-    '<p style="margin:0;max-width:32rem;line-height:1.6;text-transform:none;letter-spacing:0.02em;">' +
-    'Press Enter to Start and drop into a live ECS scene with a controllable player cube, floating ambience, and scene-driven transitions.' +
-    '</p>' +
-    '<div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">' +
-    '<p style="margin:0;padding:12px 18px;border-radius:999px;background:rgba(15, 23, 42, 0.72);border:1px solid rgba(125, 211, 252, 0.35);">' +
-    'Enter — Gameplay</p>' +
-    '<p style="margin:0;padding:12px 18px;border-radius:999px;background:rgba(15, 23, 42, 0.72);border:1px solid rgba(125, 211, 252, 0.35);">' +
-    'P — Physics Demo</p>' +
-    '<p style="margin:0;padding:12px 18px;border-radius:999px;background:rgba(15, 23, 42, 0.72);border:1px solid rgba(125, 211, 252, 0.35);">' +
-    'F — FPS Test</p>' +
-    '<p style="margin:0;padding:12px 18px;border-radius:999px;background:rgba(15, 23, 42, 0.72);border:1px solid rgba(125, 211, 252, 0.35);">' +
-    'M — Multiplayer</p>' +
-    '</div>' +
-    '</div>';
-  element.style.position = 'fixed';
-  element.style.inset = '0';
-  element.style.display = 'grid';
-  element.style.placeItems = 'center';
-  element.style.textAlign = 'center';
-  element.style.pointerEvents = 'none';
-  element.style.padding = '32px';
-  element.style.fontFamily = '"Avenir Next", "Segoe UI", sans-serif';
-  element.style.color = '#e2e8f0';
-  element.style.letterSpacing = '0.08em';
-  element.style.textTransform = 'uppercase';
-  element.style.background =
-    'radial-gradient(circle at top, rgba(14, 165, 233, 0.18), rgba(15, 23, 42, 0.78) 60%)';
+  element.className = 'arcane-ui-overlay';
+  element.style.pointerEvents = 'auto';
+  element.style.zIndex = '12';
+
+  const stack = document.createElement('div');
+  stack.className = 'arcane-ui-overlay__stack';
+
+  const hero = createHelloCubePanel({
+    eyebrow: 'Hello Cube Vertical Slice',
+    title: 'Arcane Engine Command Deck',
+    titleLevel: 1,
+    body:
+      'Start with the Sanctum Walkthrough, then move into the FPS range and the relay arena. Every route uses the same ECS, renderer, scene flow, and asset foundations without hiding the code.',
+    footer:
+      'Keyboard: Enter, P, F, M. Click a route card to jump in. Touch devices get the same route picker with larger buttons.',
+    badges: ['Built In Public', 'Scene Preload', 'FPS + Multiplayer'],
+  });
+  hero.root.style.width = 'min(1080px, 100%)';
+
+  const routeGrid = document.createElement('div');
+  routeGrid.className = 'arcane-ui-scene-grid';
+  for (const entry of TITLE_ROUTE_ENTRIES) {
+    routeGrid.appendChild(createSceneRouteButton(entry));
+  }
+
+  stack.append(hero.root, routeGrid);
+  element.appendChild(stack);
   return element;
 }
 

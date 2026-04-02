@@ -7,6 +7,8 @@ const MAX_CLIENTS = 4;
 export interface RelayServerOptions {
   /** TCP port to listen on (default 8765). */
   port?: number;
+  /** Optional host to bind for tests or explicit local-only setups. */
+  host?: string;
   /** Called with current connected count after join/leave. */
   onPlayerCount?: (count: number) => void;
 }
@@ -41,8 +43,9 @@ function isVec3(v: unknown): v is { x: number; y: number; z: number } {
 }
 
 /**
- * Minimal WebSocket relay for Stage 12: move + shoot fan-out, welcome, leave.
- * No game simulation — clients stay authoritative for their own bodies.
+ * Minimal WebSocket relay for shipped multiplayer: welcome, join, move, shoot,
+ * leave, plus ping/pong for a tiny latency readout. No game simulation —
+ * clients stay authoritative for their own bodies.
  */
 export function startRelayServer(options?: RelayServerOptions): {
   httpServer: ReturnType<typeof createServer>;
@@ -52,6 +55,7 @@ export function startRelayServer(options?: RelayServerOptions): {
   close: () => Promise<void>;
 } {
   const requestedPort = options?.port ?? 8765;
+  const requestedHost = options?.host;
   const onPlayerCount = options?.onPlayerCount;
 
   const httpServer = createServer((_req, res) => {
@@ -89,6 +93,12 @@ export function startRelayServer(options?: RelayServerOptions): {
     });
 
     ws.send(JSON.stringify({ type: 'welcome', playerId: id, existingPlayers }));
+    broadcastExcept(ws, {
+      type: 'join',
+      playerId: id,
+      position: { x: 0, y: 2, z: 0 },
+      yaw: 0,
+    });
     onPlayerCount?.(clients.size);
 
     ws.on('message', (raw) => {
@@ -114,6 +124,10 @@ export function startRelayServer(options?: RelayServerOptions): {
           origin: m.origin,
           direction: m.direction,
         });
+      } else if (m.type === 'ping' && typeof m.sentAt === 'number' && Number.isFinite(m.sentAt)) {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'pong', sentAt: m.sentAt }));
+        }
       }
     });
 
@@ -150,7 +164,7 @@ export function startRelayServer(options?: RelayServerOptions): {
       }),
   };
 
-  httpServer.listen(requestedPort, () => {
+  httpServer.listen(requestedPort, requestedHost, () => {
     const p = serverHandle.port;
     console.log(`[arcane-server] relay listening on ws://localhost:${p} (max ${MAX_CLIENTS} players)`);
   });

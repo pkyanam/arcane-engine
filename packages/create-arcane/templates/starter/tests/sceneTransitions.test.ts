@@ -43,4 +43,34 @@ describe('sceneTransitions', () => {
       'flushSceneChange: scene transitions have not been configured',
     );
   });
+
+  it('waits for an async scene load before starting the next one', async () => {
+    let resolveFirstLoad: (() => void) | undefined;
+    const loadScene = vi.fn((name: string) => {
+      if (name === 'title') {
+        return new Promise<void>((resolve) => {
+          resolveFirstLoad = resolve;
+        });
+      }
+      return Promise.resolve();
+    });
+    configureSceneTransitions(loadScene);
+
+    requestSceneChange('title');
+    flushSceneChange();
+    requestSceneChange('gameplay');
+    flushSceneChange();
+
+    expect(loadScene).toHaveBeenCalledTimes(1);
+    expect(loadScene).toHaveBeenCalledWith('title');
+
+    resolveFirstLoad?.();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    flushSceneChange();
+
+    expect(loadScene).toHaveBeenCalledTimes(2);
+    expect(loadScene).toHaveBeenLastCalledWith('gameplay');
+  });
 });

@@ -90,7 +90,7 @@ export const gameStateSystem = (
     const ratio = Math.max(0, Math.min(1, gs.playerHp / maxHp));
     hud.healthFill.style.transform = `scaleX(${ratio})`;
     hud.healthLabel.textContent = `${Math.max(0, Math.ceil(gs.playerHp))} / ${maxHp}`;
-    hud.killsLabel.textContent = String(gs.kills);
+    hud.killsLabel.textContent = `Kills ${gs.kills}`;
 
     if (gs.phase === 'dead') {
       hud.overlay.style.display = 'flex';

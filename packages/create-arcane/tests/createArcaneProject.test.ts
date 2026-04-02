@@ -61,14 +61,14 @@ describe('createArcaneProject', () => {
     const indexHtml = await readFile(path.join(result.targetDir, 'index.html'), 'utf8');
 
     expect(packageJson.name).toBe('my-game');
-    expect(packageJson.dependencies['@arcane-engine/assets']).toBe('^0.1.0');
-    expect(packageJson.dependencies['@arcane-engine/core']).toBe('^0.1.0');
-    expect(packageJson.dependencies['@arcane-engine/input']).toBe('^0.1.0');
-    expect(packageJson.dependencies['@arcane-engine/renderer']).toBe('^0.1.0');
-    expect(packageJson.pnpm.overrides['@arcane-engine/assets']).toBe('^0.1.0');
-    expect(packageJson.pnpm.overrides['@arcane-engine/core']).toBe('^0.1.0');
-    expect(packageJson.pnpm.overrides['@arcane-engine/input']).toBe('^0.1.0');
-    expect(packageJson.pnpm.overrides['@arcane-engine/renderer']).toBe('^0.1.0');
+    expect(packageJson.dependencies['@arcane-engine/assets']).toBe('^0.1.1');
+    expect(packageJson.dependencies['@arcane-engine/core']).toBe('^0.1.1');
+    expect(packageJson.dependencies['@arcane-engine/input']).toBe('^0.1.1');
+    expect(packageJson.dependencies['@arcane-engine/renderer']).toBe('^0.1.1');
+    expect(packageJson.pnpm.overrides['@arcane-engine/assets']).toBe('^0.1.1');
+    expect(packageJson.pnpm.overrides['@arcane-engine/core']).toBe('^0.1.1');
+    expect(packageJson.pnpm.overrides['@arcane-engine/input']).toBe('^0.1.1');
+    expect(packageJson.pnpm.overrides['@arcane-engine/renderer']).toBe('^0.1.1');
     expect(readme).toContain('# my-game');
     expect(indexHtml).toContain('<title>my-game - Arcane Engine</title>');
 

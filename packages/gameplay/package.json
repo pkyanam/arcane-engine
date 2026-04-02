@@ -1,0 +1,33 @@
+{
+  "name": "@arcane-engine/gameplay",
+  "version": "0.1.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "peerDependencies": {
+    "@arcane-engine/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@arcane-engine/core": "workspace:*",
+    "@arcane-engine/input": "workspace:*",
+    "@arcane-engine/physics": "workspace:*",
+    "@arcane-engine/renderer": "workspace:*",
+    "@vitest/coverage-v8": "^2.1.0",
+    "typescript": "^5.6.0",
+    "vite": "^5.4.0",
+    "vitest": "^2.1.0"
+  }
+}

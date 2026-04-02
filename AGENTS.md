@@ -47,6 +47,7 @@ Helpful entry points:
 - `packages/assets/src/index.ts`
 - `packages/input/src/index.ts`
 - `packages/physics/src/index.ts`
+- `packages/gameplay/src/index.ts`
 - `packages/server/src/server.ts`
 - `examples/hello-cube/README.md`
 
@@ -58,6 +59,7 @@ packages/renderer     Three.js setup, transform components, render helpers
 packages/assets       textures, models, animation, preload, disposal
 packages/input        input state, movement, camera follow, FPS look
 packages/physics      Rapier integration
+packages/gameplay     gameplay primitives like health, damage, state, interaction
 packages/server       tiny WebSocket relay
 packages/create-arcane project scaffolder
 templates/starter     smallest generated app
@@ -76,6 +78,7 @@ The engine you are editing already includes:
 - texture loading, glTF/GLB loading, animation playback, and scene preload helpers in `@arcane-engine/assets`
 - keyboard, mouse, follow camera, FPS look, and pointer lock in `@arcane-engine/input`
 - Rapier rigid bodies, colliders, raycast, and character controller in `@arcane-engine/physics`
+- gameplay primitives like health, damage, game state, spawn points, and interaction in `@arcane-engine/gameplay`
 - a tiny Node relay in `@arcane-engine/server`
 - scaffold templates through `@arcane-engine/create-arcane`
 - a larger copy-from-here example in `examples/hello-cube`
@@ -89,6 +92,7 @@ The engine you are editing already includes:
 | `@arcane-engine/assets` | imported assets and cache lifecycle |
 | `@arcane-engine/input` | browser input and input-driven systems |
 | `@arcane-engine/physics` | Rapier world integration |
+| `@arcane-engine/gameplay` | gameplay primitives and reusable interaction flow |
 | `@arcane-engine/server` | WebSocket relay only |
 | `@arcane-engine/create-arcane` | scaffolding |
 

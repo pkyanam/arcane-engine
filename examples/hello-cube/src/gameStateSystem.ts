@@ -4,9 +4,7 @@ import { Controllable, InputState } from '@arcane-engine/input';
 import { CharacterController, RapierBodyRef } from '@arcane-engine/physics';
 import type { PhysicsContext } from '@arcane-engine/physics';
 import { Position } from '@arcane-engine/renderer';
-import { Health } from './components/health.js';
-import { GameState } from './components/gameState.js';
-import { ShootableTarget } from './components/shootableTarget.js';
+import { GameState, Health, Hostile } from '@arcane-engine/gameplay';
 import type { FpsHudHandles } from './fpsHud.js';
 
 export type { FpsHudHandles };
@@ -36,8 +34,8 @@ export const gameStateSystem = (
 
     const players = query(world, [Controllable, Health, Position]);
 
-    const targetsLeft = query(world, [ShootableTarget]).length;
-    if (gs.phase === 'playing' && targetsLeft === 0) {
+    const targetsLeft = query(world, [Hostile]).length;
+    if (gs.phase === 'playing' && targetsLeft === 0 && gs.kills > 0) {
       gs.phase = 'win';
     }
 
@@ -74,11 +72,6 @@ export const gameStateSystem = (
       gs.phase = 'playing';
     }
 
-    if (players.length) {
-      const hp = getComponent(world, players[0], Health)!;
-      gs.playerHp = hp.current;
-    }
-
     for (const entity of query(world, [Controllable, CharacterController])) {
       const cc = getComponent(world, entity, CharacterController)!;
       const canMove = gs.phase === 'playing';
@@ -86,10 +79,11 @@ export const gameStateSystem = (
       cc.jumpSpeed = canMove ? opts.jumpSpeed : 0;
     }
 
+    const playerHp = players.length ? getComponent(world, players[0], Health)!.current : 0;
     const maxHp = players.length ? getComponent(world, players[0], Health)!.max : 1;
-    const ratio = Math.max(0, Math.min(1, gs.playerHp / maxHp));
+    const ratio = Math.max(0, Math.min(1, playerHp / maxHp));
     hud.healthFill.style.transform = `scaleX(${ratio})`;
-    hud.healthLabel.textContent = `${Math.max(0, Math.ceil(gs.playerHp))} / ${maxHp}`;
+    hud.healthLabel.textContent = `${Math.max(0, Math.ceil(playerHp))} / ${maxHp}`;
     hud.killsLabel.textContent = `Kills ${gs.kills}`;
 
     if (gs.phase === 'dead') {

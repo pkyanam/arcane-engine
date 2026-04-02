@@ -7,8 +7,8 @@ import {
   RigidBody,
 } from '@arcane-engine/physics';
 import { Position } from '@arcane-engine/renderer';
-import { GameState, type GamePhase } from './components/gameState.js';
-import { Health } from './components/health.js';
+import { GameState, Health, Player } from '@arcane-engine/gameplay';
+import type { GamePhase } from '@arcane-engine/gameplay';
 import {
   PLAYER_JUMP_SPEED,
   PLAYER_MOVE_SPEED,
@@ -24,7 +24,6 @@ export interface SpawnFpsPlayerRigOptions {
 
 export interface SpawnFpsGameStateOptions {
   kills?: number;
-  playerHp?: number;
   phase?: GamePhase;
 }
 
@@ -53,6 +52,7 @@ export function spawnFpsPlayerRig(
   });
   addComponent(world, player, Controllable);
   addComponent(world, player, Health, health);
+  addComponent(world, player, Player);
 
   return player;
 }
@@ -67,7 +67,9 @@ export function spawnFpsGameState(
   const gameStateEntity = createEntity(world);
   addComponent(world, gameStateEntity, GameState, {
     kills: options?.kills ?? 0,
-    playerHp: options?.playerHp ?? 10,
+    score: 0,
+    elapsedTime: 0,
+    customPhase: '',
     phase: options?.phase ?? 'playing',
   });
   return gameStateEntity;

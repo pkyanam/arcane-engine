@@ -224,10 +224,27 @@ function resolveModelSource(source: ModelSource): string {
 }
 
 function assertSupportedModelSource(source: string): void {
+  if (isSupportedModelDataUrl(source)) {
+    return;
+  }
+
   const normalized = source.split(/[?#]/, 1)[0]?.toLowerCase() ?? '';
   if (!normalized.endsWith('.gltf') && !normalized.endsWith('.glb')) {
     throw new Error('loadModel: only .gltf and .glb sources are supported');
   }
+}
+
+function isSupportedModelDataUrl(source: string): boolean {
+  if (!source.startsWith('data:')) {
+    return false;
+  }
+
+  const metadata = source.slice(5).split(',', 1)[0]?.toLowerCase() ?? '';
+  return (
+    metadata.startsWith('model/gltf-binary') ||
+    metadata.startsWith('model/gltf+json') ||
+    metadata.startsWith('application/octet-stream')
+  );
 }
 
 async function loadBaseModel(

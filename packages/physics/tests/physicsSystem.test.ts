@@ -8,6 +8,7 @@ import {
 } from '@arcane-engine/core';
 import { Position, Rotation } from '@arcane-engine/renderer';
 import { BoxCollider, RapierBodyRef, RigidBody } from '../src/components.js';
+import { getEntityByColliderHandle } from '../src/colliderLookup.js';
 import { createPhysicsContext, initPhysics } from '../src/physicsContext.js';
 import { physicsSystem } from '../src/physicsSystem.js';
 
@@ -54,6 +55,25 @@ describe('physicsSystem — lazy body creation', () => {
     const handleAfterSecond = getComponent(world, entity, RapierBodyRef)!.handle;
 
     expect(handleAfterFirst).toBe(handleAfterSecond);
+  });
+
+  it('registers the collider handle lookup for rigid-body colliders', () => {
+    const world = createWorld();
+    const ctx = createPhysicsContext();
+
+    const entity = createEntity(world);
+    addComponent(world, entity, Position, { x: 0, y: 5, z: 0 });
+    addComponent(world, entity, Rotation);
+    addComponent(world, entity, RigidBody, { type: 'dynamic' });
+    addComponent(world, entity, BoxCollider, { hx: 0.5, hy: 0.5, hz: 0.5 });
+
+    physicsSystem(ctx)(world, 1 / 60);
+
+    const bodyRef = getComponent(world, entity, RapierBodyRef)!;
+    const body = ctx.world.getRigidBody(bodyRef.handle)!;
+    const collider = body.collider(0);
+
+    expect(getEntityByColliderHandle(ctx, collider.handle)).toBe(entity);
   });
 });
 

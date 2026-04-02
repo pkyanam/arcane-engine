@@ -7,8 +7,7 @@ import { MeshRef, Position, Rotation, Scale, spawnMesh } from '@arcane-engine/re
 import type { RendererContext } from '@arcane-engine/renderer';
 import * as THREE from 'three';
 import { findEntityByColliderHandle } from './colliderLookup.js';
-import { Damage } from './components/damage.js';
-import { Health } from './components/health.js';
+import { Damage, Health } from '@arcane-engine/gameplay';
 import { NetworkState } from './components/networkState.js';
 import { RemotePlayer } from './components/remotePlayer.js';
 import type { FpsArenaBuckets } from './fpsArenaSetup.js';

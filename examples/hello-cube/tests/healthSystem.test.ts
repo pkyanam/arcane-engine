@@ -13,10 +13,7 @@ import {
   physicsSystem,
   RigidBody,
 } from '@arcane-engine/physics';
-import { Damage } from '../src/components/damage.js';
-import { GameState } from '../src/components/gameState.js';
-import { Health } from '../src/components/health.js';
-import { ShootableTarget } from '../src/components/shootableTarget.js';
+import { Damage, GameState, Health, Hostile } from '@arcane-engine/gameplay';
 import { healthSystem } from '../src/healthSystem.js';
 
 beforeAll(async () => {
@@ -99,7 +96,7 @@ describe('healthSystem', () => {
     const sys = healthSystem(physCtx, rendererCtx);
 
     const stateEnt = createEntity(world);
-    addComponent(world, stateEnt, GameState, { kills: 0, playerHp: 10, phase: 'playing' });
+    addComponent(world, stateEnt, GameState, { phase: 'playing', customPhase: '', kills: 0, score: 0, elapsedTime: 0 });
 
     const player = createEntity(world);
     addComponent(world, player, Health, { current: 1, max: 10 });
@@ -113,18 +110,18 @@ describe('healthSystem', () => {
     expect(getComponent(world, stateEnt, GameState)?.phase).toBe('dead');
   });
 
-  it('increments GameState.kills when destroying a ShootableTarget', () => {
+  it('increments GameState.kills when destroying a Hostile', () => {
     const world = createWorld();
     const physCtx = createPhysicsContext();
     const rendererCtx = minimalRendererContext();
     const sys = healthSystem(physCtx, rendererCtx);
 
     const stateEnt = createEntity(world);
-    addComponent(world, stateEnt, GameState, { kills: 0, playerHp: 10, phase: 'playing' });
+    addComponent(world, stateEnt, GameState, { phase: 'playing', customPhase: '', kills: 0, score: 0, elapsedTime: 0 });
 
     const target = createEntity(world);
     addComponent(world, target, Health, { current: 1, max: 1 });
-    addComponent(world, target, ShootableTarget);
+    addComponent(world, target, Hostile, { scoreValue: 1 });
     addComponent(world, target, Damage, { amount: 1 });
 
     sys(world, 1 / 60);
@@ -140,7 +137,7 @@ describe('healthSystem', () => {
     const sys = healthSystem(physCtx, rendererCtx);
 
     const stateEnt = createEntity(world);
-    addComponent(world, stateEnt, GameState, { kills: 0, playerHp: 0, phase: 'dead' });
+    addComponent(world, stateEnt, GameState, { phase: 'dead', customPhase: '', kills: 0, score: 0, elapsedTime: 0 });
 
     const player = createEntity(world);
     addComponent(world, player, Health, { current: 0, max: 10 });

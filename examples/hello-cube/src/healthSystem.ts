@@ -11,10 +11,7 @@ import { MeshRef } from '@arcane-engine/renderer';
 import type { RendererContext } from '@arcane-engine/renderer';
 import { RapierBodyRef } from '@arcane-engine/physics';
 import type { PhysicsContext } from '@arcane-engine/physics';
-import { Damage } from './components/damage.js';
-import { GameState } from './components/gameState.js';
-import { Health } from './components/health.js';
-import { ShootableTarget } from './components/shootableTarget.js';
+import { Damage, GameState, Health, Hostile } from '@arcane-engine/gameplay';
 
 /**
  * Applies {@link Damage}, removes it, and destroys entities at 0 hp.
@@ -49,8 +46,9 @@ export const healthSystem = (
         continue;
       }
 
-      if (hasComponent(world, entity, ShootableTarget) && gs !== undefined) {
-        gs.kills += 1;
+      if (hasComponent(world, entity, Hostile) && gs !== undefined) {
+        const hostile = getComponent(world, entity, Hostile)!;
+        gs.kills += hostile.scoreValue;
       }
 
       const meshRef = getComponent(world, entity, MeshRef);

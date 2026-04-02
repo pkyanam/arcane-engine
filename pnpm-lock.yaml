@@ -16,6 +16,9 @@ importers:
       '@arcane-engine/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@arcane-engine/gameplay':
+        specifier: workspace:*
+        version: link:../../packages/gameplay
       '@arcane-engine/input':
         specifier: workspace:*
         version: link:../../packages/input
@@ -96,6 +99,33 @@ importers:
       '@types/node':
         specifier: ^22.10.2
         version: 22.19.15
+      '@vitest/coverage-v8':
+        specifier: ^2.1.0
+        version: 2.1.9(vitest@2.1.9(@types/node@22.19.15)(jsdom@25.0.1))
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+      vite:
+        specifier: ^5.4.0
+        version: 5.4.21(@types/node@22.19.15)
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@22.19.15)(jsdom@25.0.1)
+
+  packages/gameplay:
+    devDependencies:
+      '@arcane-engine/core':
+        specifier: workspace:*
+        version: link:../core
+      '@arcane-engine/input':
+        specifier: workspace:*
+        version: link:../input
+      '@arcane-engine/physics':
+        specifier: workspace:*
+        version: link:../physics
+      '@arcane-engine/renderer':
+        specifier: workspace:*
+        version: link:../renderer
       '@vitest/coverage-v8':
         specifier: ^2.1.0
         version: 2.1.9(vitest@2.1.9(@types/node@22.19.15)(jsdom@25.0.1))

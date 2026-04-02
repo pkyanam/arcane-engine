@@ -43,6 +43,7 @@ Useful entry points:
 - `packages/assets/src/index.ts`
 - `packages/input/src/index.ts`
 - `packages/physics/src/index.ts`
+- `packages/gameplay/src/index.ts`
 - `packages/server/src/server.ts`
 - `examples/hello-cube/README.md`
 
@@ -54,6 +55,7 @@ packages/renderer      Three.js bridge
 packages/assets        asset loading and animation helpers
 packages/input         browser input and camera helpers
 packages/physics       Rapier integration
+packages/gameplay      gameplay primitives and interaction helpers
 packages/server        tiny WebSocket relay
 packages/create-arcane project scaffolder
 templates/starter      minimal generated app
@@ -80,6 +82,7 @@ PRDs/                  historical planning docs
 | `@arcane-engine/assets` | textures, models, animation, preload, disposal |
 | `@arcane-engine/input` | input state, movement, camera helpers |
 | `@arcane-engine/physics` | Rapier world, colliders, character controller |
+| `@arcane-engine/gameplay` | health, damage, game state, spawn points, interaction |
 | `@arcane-engine/server` | relay only, no game simulation |
 | `@arcane-engine/create-arcane` | scaffolding |
 

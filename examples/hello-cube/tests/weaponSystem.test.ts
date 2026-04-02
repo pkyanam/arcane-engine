@@ -10,8 +10,7 @@ import * as THREE from 'three';
 import { Controllable, FPSCamera, InputState } from '@arcane-engine/input';
 import { MeshRef, Position, Rotation } from '@arcane-engine/renderer';
 import { BoxCollider, createPhysicsContext, initPhysics, physicsSystem, RigidBody } from '@arcane-engine/physics';
-import { Damage } from '../src/components/damage.js';
-import { Health } from '../src/components/health.js';
+import { Damage, Health } from '@arcane-engine/gameplay';
 import { weaponSystem } from '../src/weaponSystem.js';
 
 beforeAll(async () => {

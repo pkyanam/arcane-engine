@@ -6,8 +6,7 @@ import { raycast } from '@arcane-engine/physics';
 import type { PhysicsContext } from '@arcane-engine/physics';
 import * as THREE from 'three';
 import { findEntityByColliderHandle } from './colliderLookup.js';
-import { Damage } from './components/damage.js';
-import { Health } from './components/health.js';
+import { Damage, Health } from '@arcane-engine/gameplay';
 import { HitFlash } from './components/hitFlash.js';
 
 const scratchEuler = new THREE.Euler(0, 0, 0, 'YXZ');

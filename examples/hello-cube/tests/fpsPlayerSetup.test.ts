@@ -11,8 +11,7 @@ import {
   RigidBody,
 } from '@arcane-engine/physics';
 import { Position } from '@arcane-engine/renderer';
-import { GameState } from '../src/components/gameState.js';
-import { Health } from '../src/components/health.js';
+import { GameState, Health, Player } from '@arcane-engine/gameplay';
 import {
   spawnFpsGameState,
   spawnFpsPlayerRig,
@@ -64,9 +63,11 @@ describe('spawnFpsGameState', () => {
     const entity = spawnFpsGameState(world);
 
     expect(getComponent(world, entity, GameState)).toEqual({
-      kills: 0,
-      playerHp: 10,
       phase: 'playing',
+      customPhase: '',
+      kills: 0,
+      score: 0,
+      elapsedTime: 0,
     });
   });
 
@@ -75,14 +76,15 @@ describe('spawnFpsGameState', () => {
 
     const entity = spawnFpsGameState(world, {
       kills: 3,
-      playerHp: 4,
       phase: 'dead',
     });
 
     expect(getComponent(world, entity, GameState)).toEqual({
-      kills: 3,
-      playerHp: 4,
       phase: 'dead',
+      customPhase: '',
+      kills: 3,
+      score: 0,
+      elapsedTime: 0,
     });
   });
 });

@@ -4,6 +4,7 @@ import type { SystemFn, World } from '@arcane-engine/core';
 import { Position, Rotation } from '@arcane-engine/renderer';
 import type { PhysicsContext } from './physicsContext.js';
 import { BoxCollider, RapierBodyRef, RigidBody } from './components.js';
+import { registerColliderEntityHandle } from './colliderLookup.js';
 
 // ---------------------------------------------------------------------------
 // Internal math helpers
@@ -114,7 +115,8 @@ export const physicsSystem = (ctx: PhysicsContext): SystemFn =>
       if (boxCollider.friction !== undefined) {
         colliderDesc.setFriction(boxCollider.friction);
       }
-      ctx.world.createCollider(colliderDesc, body);
+      const collider = ctx.world.createCollider(colliderDesc, body);
+      registerColliderEntityHandle(ctx, collider.handle, entity);
 
       addComponent(world, entity, RapierBodyRef, { handle: body.handle });
     }

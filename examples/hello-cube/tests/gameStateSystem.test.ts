@@ -10,9 +10,7 @@ import {
   RigidBody,
 } from '@arcane-engine/physics';
 import { Position } from '@arcane-engine/renderer';
-import { Health } from '../src/components/health.js';
-import { GameState } from '../src/components/gameState.js';
-import { ShootableTarget } from '../src/components/shootableTarget.js';
+import { Health, GameState, Hostile } from '@arcane-engine/gameplay';
 import { gameStateSystem, type FpsHudHandles } from '../src/gameStateSystem.js';
 
 beforeAll(async () => {
@@ -29,12 +27,12 @@ function makeHud(): FpsHudHandles {
 }
 
 describe('gameStateSystem', () => {
-  it('sets phase win when playing and no ShootableTarget entities remain', () => {
+  it('sets phase win when playing and no Hostile entities remain', () => {
     const world = createWorld();
     const physCtx = createPhysicsContext();
     const hud = makeHud();
     const stateEnt = createEntity(world);
-    addComponent(world, stateEnt, GameState, { kills: 0, playerHp: 10, phase: 'playing' });
+    addComponent(world, stateEnt, GameState, { phase: 'playing', customPhase: '', kills: 1, score: 0, elapsedTime: 0 });
 
     const sys = gameStateSystem(physCtx, hud, {
       spawn: { x: 0, y: 2, z: 0 },
@@ -52,7 +50,7 @@ describe('gameStateSystem', () => {
     const physCtx = createPhysicsContext();
     const hud = makeHud();
     const stateEnt = createEntity(world);
-    addComponent(world, stateEnt, GameState, { kills: 0, playerHp: 0, phase: 'dead' });
+    addComponent(world, stateEnt, GameState, { phase: 'dead', customPhase: '', kills: 0, score: 0, elapsedTime: 0 });
 
     const sys = gameStateSystem(physCtx, hud, {
       spawn: { x: 0, y: 2, z: 0 },
@@ -73,7 +71,7 @@ describe('gameStateSystem', () => {
     addComponent(world, inputEnt, InputState);
 
     const stateEnt = createEntity(world);
-    addComponent(world, stateEnt, GameState, { kills: 2, playerHp: 0, phase: 'dead' });
+    addComponent(world, stateEnt, GameState, { phase: 'dead', customPhase: '', kills: 2, score: 0, elapsedTime: 0 });
 
     const player = createEntity(world);
     addComponent(world, player, Position, { x: 9, y: 2, z: 9 });
@@ -106,15 +104,15 @@ describe('gameStateSystem', () => {
     expect(getComponent(world, player, CharacterController)?._velocityY).toBe(0);
   });
 
-  it('keeps playing while ShootableTarget entities exist', () => {
+  it('keeps playing while Hostile entities exist', () => {
     const world = createWorld();
     const physCtx = createPhysicsContext();
     const hud = makeHud();
     const stateEnt = createEntity(world);
-    addComponent(world, stateEnt, GameState, { kills: 0, playerHp: 10, phase: 'playing' });
+    addComponent(world, stateEnt, GameState, { phase: 'playing', customPhase: '', kills: 0, score: 0, elapsedTime: 0 });
 
     const t = createEntity(world);
-    addComponent(world, t, ShootableTarget);
+    addComponent(world, t, Hostile, { scoreValue: 1 });
 
     const sys = gameStateSystem(physCtx, hud, {
       spawn: { x: 0, y: 2, z: 0 },
@@ -132,7 +130,7 @@ describe('gameStateSystem', () => {
     const hud = makeHud();
 
     const stateEnt = createEntity(world);
-    addComponent(world, stateEnt, GameState, { kills: 1, playerHp: 0, phase: 'playing' });
+    addComponent(world, stateEnt, GameState, { phase: 'playing', customPhase: '', kills: 1, score: 0, elapsedTime: 0 });
 
     const player = createEntity(world);
     addComponent(world, player, Health, { current: 7, max: 10 });

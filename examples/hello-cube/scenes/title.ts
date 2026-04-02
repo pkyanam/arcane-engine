@@ -43,6 +43,9 @@ function createSceneRouteButton(entry: (typeof TITLE_ROUTE_ENTRIES)[number]): HT
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'arcane-ui-scene-button';
+  const queueSceneChange = (): void => {
+    requestSceneChange(entry.sceneName);
+  };
 
   const topline = document.createElement('div');
   topline.className = 'arcane-ui-scene-button__topline';
@@ -84,8 +87,10 @@ function createSceneRouteButton(entry: (typeof TITLE_ROUTE_ENTRIES)[number]): HT
   }
 
   button.append(topline, title, summary, badges);
-  button.addEventListener('click', () => {
-    requestSceneChange(entry.sceneName);
+  button.addEventListener('click', queueSceneChange);
+  button.addEventListener('pointerup', (event) => {
+    if (!event.isPrimary || event.button !== 0) return;
+    queueSceneChange();
   });
   return button;
 }

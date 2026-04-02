@@ -12,9 +12,9 @@ export interface RaycastHit {
   /**
    * Rapier collider handle of the first object hit.
    *
-   * This is a low-level Rapier handle, not an ECS entity ID.  A future weapon
-   * or interaction system will need to maintain a `Map<handle, Entity>` to
-   * convert this into an entity reference.
+   * This is a low-level Rapier handle, not an ECS entity ID. Use
+   * {@link getEntityByColliderHandle} to resolve it back to an Arcane Engine
+   * entity when needed.
    */
   colliderHandle: number;
   /** World-space point where the ray intersected the collider surface. */

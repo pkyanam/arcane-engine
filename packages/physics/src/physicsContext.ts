@@ -1,4 +1,5 @@
 import RAPIER from '@dimforge/rapier3d-compat';
+import type { Entity } from '@arcane-engine/core';
 
 /** Whether {@link initPhysics} has completed successfully. */
 let initialized = false;
@@ -46,6 +47,8 @@ export interface PhysicsOptions {
 export interface PhysicsContext {
   /** The Rapier physics world. */
   readonly world: RAPIER.World;
+  /** Internal collider-handle lookup used by raycast and trigger helpers. */
+  readonly colliderEntities: Map<number, Entity>;
 }
 
 /**
@@ -71,5 +74,8 @@ export function createPhysicsContext(options?: PhysicsOptions): PhysicsContext {
   const gravity = { x: g.x ?? 0, y: g.y ?? -9.81, z: g.z ?? 0 };
   const world = new RAPIER.World(gravity);
 
-  return { world };
+  return {
+    world,
+    colliderEntities: new Map<number, Entity>(),
+  };
 }

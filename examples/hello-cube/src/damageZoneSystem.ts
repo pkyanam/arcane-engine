@@ -2,9 +2,7 @@ import { addComponent, getComponent, query } from '@arcane-engine/core';
 import type { SystemFn, World } from '@arcane-engine/core';
 import { Controllable } from '@arcane-engine/input';
 import { Position } from '@arcane-engine/renderer';
-import { Damage } from './components/damage.js';
-import { Health } from './components/health.js';
-import { GameState } from './components/gameState.js';
+import { Damage, GameState, Health } from '@arcane-engine/gameplay';
 
 export interface DamageZone {
   minX: number;

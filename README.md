@@ -7,7 +7,7 @@ It gives you the boring setup work so you can get to the fun part faster:
 - an ECS core for game logic
 - renderer helpers for putting things on screen
 - input helpers for keyboard, mouse, and FPS look
-- optional packages for textures, models, animation, physics, and multiplayer relay
+- optional packages for textures, models, animation, physics, gameplay helpers, and multiplayer relay
 - a CLI that scaffolds a new project for you
 
 The goal is simple: make it dead simple to start and grow a browser game without inventing a game framework from scratch first.
@@ -113,6 +113,7 @@ arcane-engine/
 |  |- assets/          # textures, models, animation, preload, disposal
 |  |- input/           # keyboard, mouse, camera, FPS look
 |  |- physics/         # Rapier integration
+|  |- gameplay/        # health, damage, game state, interaction helpers
 |  |- server/          # tiny WebSocket relay for multiplayer demos
 |  `- create-arcane/   # project scaffolder
 |- templates/
@@ -137,6 +138,7 @@ arcane-engine/
 | [`@arcane-engine/assets`](./packages/assets/README.md) | textures, glTF/GLB loading, repeated model spawning, animation playback, scene preload |
 | [`@arcane-engine/input`](./packages/input/README.md) | shared input state, movement, follow camera, FPS look |
 | [`@arcane-engine/physics`](./packages/physics/README.md) | Rapier world, rigid bodies, colliders, raycast, character controller |
+| [`@arcane-engine/gameplay`](./packages/gameplay/README.md) | health, damage, game state, spawn points, and standard interaction flow |
 | [`@arcane-engine/server`](./packages/server/README.md) | tiny Node relay for multiplayer browser demos |
 | [`@arcane-engine/create-arcane`](./packages/create-arcane/README.md) | CLI for scaffolding a new game |
 

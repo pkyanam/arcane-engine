@@ -331,7 +331,7 @@ async function readPublishedArcaneVersion(): Promise<string> {
     }
   }
 
-  return '^0.1.0';
+  return '^0.1.1';
 }
 
 async function toFileDependency(targetDir: string, dependencyDir: string): Promise<string> {

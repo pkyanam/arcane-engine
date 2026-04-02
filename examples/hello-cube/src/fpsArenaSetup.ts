@@ -4,8 +4,7 @@ import { BoxCollider, RigidBody } from '@arcane-engine/physics';
 import { Position, Rotation, spawnMesh } from '@arcane-engine/renderer';
 import type { RendererContext } from '@arcane-engine/renderer';
 import * as THREE from 'three';
-import { Health } from './components/health.js';
-import { ShootableTarget } from './components/shootableTarget.js';
+import { Health, Hostile } from '@arcane-engine/gameplay';
 
 export const PLAYER_SPAWN = { x: 0, y: 2, z: 0 };
 export const PLAYER_MOVE_SPEED = 5;
@@ -102,7 +101,7 @@ function spawnShootingTarget(
   addComponent(world, entity, RigidBody, { type: 'fixed' });
   addComponent(world, entity, BoxCollider, { ...half, friction: 0.75 });
   addComponent(world, entity, Health, { current: 3, max: 3 });
-  addComponent(world, entity, ShootableTarget);
+  addComponent(world, entity, Hostile, { scoreValue: 1 });
 }
 
 /** Same room, obstacles, hazard pad, and shootable targets as `fps-test`. */

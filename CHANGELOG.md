@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format is based on 
 
 ## [Unreleased]
 
+## [3.0.2] - 2026-04-02
+
+### Added
+
+- **`@arcane-engine/gameplay`** now ships the interaction layer: `Interactable`, `Activated`, `InInteractionRange`, `interactionSystem()`, and helpers for standard `Press E` activation flows.
+- **`@arcane-engine/physics`** now ships trigger volumes plus collider-handle lookup helpers that gameplay systems and examples can reuse.
+
+### Changed
+
+- **`examples/hello-cube`** now imports the promoted gameplay primitives and trigger-backed helpers instead of carrying older local copies.
+- **Repo release plumbing** now includes `@arcane-engine/gameplay` in the root test build path, aligns workspace package versions, and refreshes the scaffolder's published dependency fallback.
+
+### Docs
+
+- Root docs, agent docs, contributor guidance, and package READMEs now describe `@arcane-engine/gameplay` as a shipped package and keep the repo map aligned with the real workspace.
+
 ## [3.0.1] - 2026-04-01
 
 ### Changed

@@ -2,16 +2,14 @@ import { addComponent, createEntity, createWorld, getComponent, hasComponent } f
 import { describe, expect, it } from 'vitest';
 import { Controllable } from '@arcane-engine/input';
 import { Position } from '@arcane-engine/renderer';
-import { Damage } from '../src/components/damage.js';
-import { GameState } from '../src/components/gameState.js';
-import { Health } from '../src/components/health.js';
+import { Damage, GameState, Health } from '@arcane-engine/gameplay';
 import { damageZoneSystem } from '../src/damageZoneSystem.js';
 
 describe('damageZoneSystem', () => {
   it('applies Damage after the interval elapses while the player is inside the box', () => {
     const world = createWorld();
     const stateEnt = createEntity(world);
-    addComponent(world, stateEnt, GameState, { kills: 0, playerHp: 10, phase: 'playing' });
+    addComponent(world, stateEnt, GameState, { phase: 'playing', customPhase: '', kills: 0, score: 0, elapsedTime: 0 });
 
     const player = createEntity(world);
     addComponent(world, player, Controllable);
@@ -38,7 +36,7 @@ describe('damageZoneSystem', () => {
   it('does not tick while phase is not playing', () => {
     const world = createWorld();
     const stateEnt = createEntity(world);
-    addComponent(world, stateEnt, GameState, { kills: 0, playerHp: 10, phase: 'dead' });
+    addComponent(world, stateEnt, GameState, { phase: 'dead', customPhase: '', kills: 0, score: 0, elapsedTime: 0 });
 
     const player = createEntity(world);
     addComponent(world, player, Controllable);

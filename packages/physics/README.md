@@ -8,6 +8,7 @@ Use this package when you want:
 - solid floors and walls
 - rigid bodies
 - box colliders
+- trigger volumes
 - raycast checks
 - FPS-style character movement
 
@@ -55,10 +56,17 @@ addComponent(world, cube, BoxCollider, { hx: 0.5, hy: 0.5, hz: 0.5 });
 - `physicsSystem(ctx)`
 - `characterControllerSystem(ctx)`
 - `raycast(ctx, origin, direction, maxDistance)`
+- `triggerVolumeSystem(ctx)`
+- `spawnTriggerVolume(world, physicsCtx, options)`
+- `isInsideTrigger(world, triggerEntity, testEntity)`
+- `getEntitiesInTrigger(world, triggerEntity)`
+- `getEntityByColliderHandle(ctx, colliderHandle)`
 - `RigidBody`
 - `BoxCollider`
 - `RapierBodyRef`
+- `RapierColliderRef`
 - `CharacterController`
+- `TriggerVolume`
 
 ## Rigid Body Types
 
@@ -103,6 +111,40 @@ const hit = raycast(
 ```
 
 It returns the first hit or `null`.
+
+If you want the ECS entity behind a hit collider handle, call
+`getEntityByColliderHandle(physics, hit.colliderHandle)`.
+
+## Trigger Volumes
+
+Use `TriggerVolume` with `triggerVolumeSystem()` for proximity checks like
+pickups, doors, objectives, or damage zones:
+
+```ts
+import { registerSystem } from '@arcane-engine/core';
+import {
+  createPhysicsContext,
+  initPhysics,
+  physicsSystem,
+  spawnTriggerVolume,
+  triggerVolumeSystem,
+} from '@arcane-engine/physics';
+
+await initPhysics();
+
+const physics = createPhysicsContext();
+registerSystem(world, physicsSystem(physics));
+registerSystem(world, triggerVolumeSystem(physics));
+
+const trigger = spawnTriggerVolume(world, physics, {
+  position: { x: 0, y: 1, z: 0 },
+  shape: 'box',
+  halfExtents: { x: 2, y: 1, z: 2 },
+});
+```
+
+Read `TriggerVolume.entities`, `entered`, and `exited` inside your own gameplay
+systems. The physics package updates those sets each tick.
 
 ## Notes
 

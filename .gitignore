@@ -9,4 +9,12 @@ coverage/
 .DS_Store
 
 .tmp-create-arcane-*/
+.cache/
+.turbo/
+playwright-report/
+test-results/
+tmp/
+tmp-*/
+*.tgz
+*.zip
 *.log

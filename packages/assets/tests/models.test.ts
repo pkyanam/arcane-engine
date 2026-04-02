@@ -77,6 +77,20 @@ describe('loadModel', () => {
     );
   });
 
+  it('accepts Vite-inlined GLB data URLs', async () => {
+    const cache = createTextureCache();
+    const scene = makeLoadedModel();
+    const loadAsync = vi
+      .spyOn(GLTFLoader.prototype, 'loadAsync')
+      .mockResolvedValue({ scene } as Awaited<ReturnType<GLTFLoader['loadAsync']>>);
+
+    const source = 'data:model/gltf-binary;base64,AAAA';
+    const asset = await loadModel(cache, source);
+
+    expect(asset.source).toBe(source);
+    expect(loadAsync).toHaveBeenCalledWith(source);
+  });
+
   it('rejects new loads after the asset cache has been disposed', async () => {
     const cache = createTextureCache();
     disposeAssetCache(cache);

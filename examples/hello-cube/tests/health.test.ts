@@ -1,17 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { Damage } from '../src/components/damage.js';
-import { Health } from '../src/components/health.js';
+import { Damage, Health } from '@arcane-engine/gameplay';
 import { HitFlash } from '../src/components/hitFlash.js';
 
 describe('Health', () => {
-  it('defaults to 3 / 3', () => {
-    expect(Health.default()).toEqual({ current: 3, max: 3 });
+  it('defaults to 10 / 10', () => {
+    expect(Health.default()).toEqual({ current: 10, max: 10 });
   });
 });
 
 describe('Damage', () => {
-  it('defaults amount to 1', () => {
-    expect(Damage.default()).toEqual({ amount: 1 });
+  it('defaults amount to 1 with null source', () => {
+    expect(Damage.default()).toEqual({ amount: 1, source: null });
   });
 });
 

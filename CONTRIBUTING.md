@@ -59,6 +59,7 @@ Keep each package boring and obvious:
 - `packages/assets`: texture/model loading, animation, preload, disposal
 - `packages/input`: DOM input bridge and input-driven systems
 - `packages/physics`: Rapier integration
+- `packages/gameplay`: gameplay primitives and interaction helpers
 - `packages/server`: relay only
 - `packages/create-arcane`: scaffolding
 

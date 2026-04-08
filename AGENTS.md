@@ -45,6 +45,7 @@ Helpful entry points:
 - `packages/core/src/index.ts`
 - `packages/renderer/src/index.ts`
 - `packages/assets/src/index.ts`
+- `packages/audio/src/index.ts`
 - `packages/input/src/index.ts`
 - `packages/physics/src/index.ts`
 - `packages/gameplay/src/index.ts`
@@ -57,9 +58,10 @@ Helpful entry points:
 packages/core         ECS world, entities, components, queries, systems, loop, scenes
 packages/renderer     Three.js setup, transform components, render helpers
 packages/assets       textures, models, animation, preload, disposal
+packages/audio        Web Audio loading, spatial sound, music, mixer, cleanup
 packages/input        input state, movement, camera follow, FPS look
 packages/physics      Rapier integration
-packages/gameplay     gameplay primitives like health, damage, state, interaction
+packages/gameplay     gameplay primitives like health, damage, damage zones, state, interaction
 packages/server       tiny WebSocket relay
 packages/create-arcane project scaffolder
 templates/starter     smallest generated app
@@ -76,9 +78,10 @@ The engine you are editing already includes:
 - ECS world and scene management in `@arcane-engine/core`
 - Three.js renderer setup and lighting helpers in `@arcane-engine/renderer`
 - texture loading, glTF/GLB loading, animation playback, and scene preload helpers in `@arcane-engine/assets`
+- sound loading, positional sound, music playback, volume controls, and autoplay-safe resume helpers in `@arcane-engine/audio`
 - keyboard, mouse, follow camera, FPS look, and pointer lock in `@arcane-engine/input`
 - Rapier rigid bodies, colliders, raycast, and character controller in `@arcane-engine/physics`
-- gameplay primitives like health, damage, game state, spawn points, and interaction in `@arcane-engine/gameplay`
+- gameplay primitives like health, damage, damage zones, game state, spawn points, and interaction in `@arcane-engine/gameplay`
 - a tiny Node relay in `@arcane-engine/server`
 - scaffold templates through `@arcane-engine/create-arcane`
 - a larger copy-from-here example in `examples/hello-cube`
@@ -90,9 +93,10 @@ The engine you are editing already includes:
 | `@arcane-engine/core` | ECS primitives and lifecycle |
 | `@arcane-engine/renderer` | Three.js bridge and render-time components |
 | `@arcane-engine/assets` | imported assets and cache lifecycle |
+| `@arcane-engine/audio` | Web Audio loading, spatial sound, music playback, mixer, and cleanup |
 | `@arcane-engine/input` | browser input and input-driven systems |
 | `@arcane-engine/physics` | Rapier world integration |
-| `@arcane-engine/gameplay` | gameplay primitives and reusable interaction flow |
+| `@arcane-engine/gameplay` | gameplay primitives, damage zones, and reusable interaction flow |
 | `@arcane-engine/server` | WebSocket relay only |
 | `@arcane-engine/create-arcane` | scaffolding |
 
@@ -195,7 +199,7 @@ pnpm build
 
 Do not build these unless the task explicitly asks for them:
 
-- audio systems
+- advanced audio systems beyond the shipped audio package
 - a visual editor
 - a general plugin ecosystem
 - production-grade game servers

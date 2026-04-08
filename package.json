@@ -3,7 +3,7 @@
   "version": "3.0.2",
   "private": true,
   "scripts": {
-    "test": "pnpm --filter @arcane-engine/core build && pnpm --filter @arcane-engine/renderer build && pnpm --filter @arcane-engine/assets build && pnpm --filter @arcane-engine/input build && pnpm --filter @arcane-engine/physics build && pnpm --filter @arcane-engine/gameplay build && pnpm --filter @arcane-engine/server build && pnpm -r test",
+    "test": "pnpm --filter @arcane-engine/core build && pnpm --filter @arcane-engine/renderer build && pnpm --filter @arcane-engine/assets build && pnpm --filter @arcane-engine/audio build && pnpm --filter @arcane-engine/input build && pnpm --filter @arcane-engine/physics build && pnpm --filter @arcane-engine/gameplay build && pnpm --filter @arcane-engine/server build && pnpm -r test",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck"
   }

@@ -3,6 +3,8 @@ export { Activated } from './components/Activated.js';
 export type { ActivatedData } from './components/Activated.js';
 export { Health } from './components/Health.js';
 export { Damage } from './components/Damage.js';
+export { DamageZone } from './components/DamageZone.js';
+export type { DamageZoneData } from './components/DamageZone.js';
 export { GameState } from './components/GameState.js';
 export type { GamePhase, GameStateData } from './components/GameState.js';
 export { Hostile } from './components/Hostile.js';
@@ -16,6 +18,7 @@ export { SpawnPoint } from './components/SpawnPoint.js';
 
 // Systems
 export { healthSystem } from './healthSystem.js';
+export { damageZoneSystem } from './damageZoneSystem.js';
 export { gameStateSystem } from './gameStateSystem.js';
 export { interactionSystem } from './interactionSystem.js';
 
@@ -26,7 +29,9 @@ export {
   getPlayer,
   makeInteractable,
   respawn,
+  setDamageZoneEnabled,
   setInteractableEnabled,
+  spawnDamageZone,
   wasActivated,
 } from './utils.js';
-export type { MakeInteractableOptions } from './utils.js';
+export type { MakeInteractableOptions, SpawnDamageZoneOptions } from './utils.js';

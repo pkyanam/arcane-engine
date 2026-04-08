@@ -1,5 +1,6 @@
 import {
   addComponent,
+  createEntity,
   getComponent,
   hasComponent,
   query,
@@ -8,12 +9,14 @@ import {
 import type { Entity, World } from '@arcane-engine/core';
 import { Activated } from './components/Activated.js';
 import { Damage } from './components/Damage.js';
+import { DamageZone } from './components/DamageZone.js';
 import { Dead } from './components/Dead.js';
 import { GameState } from './components/GameState.js';
 import { Health } from './components/Health.js';
 import { Interactable } from './components/Interactable.js';
 import { Player } from './components/Player.js';
 import { SpawnPoint } from './components/SpawnPoint.js';
+import { PositionRef, TriggerVolumeRef } from './interopComponents.js';
 
 export interface MakeInteractableOptions {
   promptText: string;
@@ -22,6 +25,18 @@ export interface MakeInteractableOptions {
   enabled?: boolean;
   requiresFacing?: boolean;
   cooldown?: number;
+}
+
+export interface SpawnDamageZoneOptions {
+  position: { x: number; y: number; z: number };
+  shape: 'box' | 'sphere';
+  halfExtents?: { x: number; y: number; z: number };
+  radius?: number;
+  damagePerSecond?: number;
+  burstDamage?: number;
+  damageInterval?: number;
+  enabled?: boolean;
+  source?: Entity | null;
 }
 
 /** Apply damage to a target entity. Adds a {@link Damage} component that {@link healthSystem} will process. */
@@ -122,4 +137,73 @@ export function setInteractableEnabled(world: World, entity: Entity, enabled: bo
   const interactable = getComponent(world, entity, Interactable);
   if (!interactable) return;
   interactable.enabled = enabled;
+}
+
+/**
+ * Spawn a trigger-backed damage zone entity.
+ *
+ * The returned entity gets the same `Position` and `TriggerVolume` component
+ * names that `@arcane-engine/physics` reads, plus a gameplay `DamageZone`.
+ */
+export function spawnDamageZone(
+  world: World,
+  _physCtx: { readonly world: unknown },
+  options: SpawnDamageZoneOptions,
+): Entity {
+  const entity = createEntity(world);
+  addComponent(world, entity, PositionRef, options.position);
+
+  if (options.shape === 'box') {
+    if (!options.halfExtents) {
+      throw new Error('spawnDamageZone: halfExtents are required for box damage zones');
+    }
+
+    addComponent(world, entity, TriggerVolumeRef, {
+      shape: 'box',
+      hx: options.halfExtents.x,
+      hy: options.halfExtents.y,
+      hz: options.halfExtents.z,
+      radius: 0,
+    });
+  } else {
+    if (options.radius === undefined) {
+      throw new Error('spawnDamageZone: radius is required for sphere damage zones');
+    }
+
+    addComponent(world, entity, TriggerVolumeRef, {
+      shape: 'sphere',
+      radius: options.radius,
+      hx: 0,
+      hy: 0,
+      hz: 0,
+    });
+  }
+
+  const damageZoneData: Partial<ReturnType<typeof DamageZone.default>> = {};
+  if (options.damagePerSecond !== undefined) {
+    damageZoneData.damagePerSecond = options.damagePerSecond;
+  }
+  if (options.burstDamage !== undefined) {
+    damageZoneData.burstDamage = options.burstDamage;
+  }
+  if (options.damageInterval !== undefined) {
+    damageZoneData.damageInterval = options.damageInterval;
+  }
+  if (options.enabled !== undefined) {
+    damageZoneData.enabled = options.enabled;
+  }
+  if (options.source !== undefined) {
+    damageZoneData.source = options.source;
+  }
+
+  addComponent(world, entity, DamageZone, damageZoneData);
+
+  return entity;
+}
+
+/** Enable or disable an existing {@link DamageZone}. No-op when the entity is not a damage zone. */
+export function setDamageZoneEnabled(world: World, entity: Entity, enabled: boolean): void {
+  const damageZone = getComponent(world, entity, DamageZone);
+  if (!damageZone) return;
+  damageZone.enabled = enabled;
 }

@@ -57,9 +57,10 @@ Keep each package boring and obvious:
 - `packages/core`: ECS, queries, systems, scenes, loop
 - `packages/renderer`: Three.js integration
 - `packages/assets`: texture/model loading, animation, preload, disposal
+- `packages/audio`: Web Audio loading, spatial sound, music, volume, resume, cleanup
 - `packages/input`: DOM input bridge and input-driven systems
 - `packages/physics`: Rapier integration
-- `packages/gameplay`: gameplay primitives and interaction helpers
+- `packages/gameplay`: gameplay primitives, damage zones, and interaction helpers
 - `packages/server`: relay only
 - `packages/create-arcane`: scaffolding
 
@@ -117,7 +118,7 @@ Avoid:
 
 Do not add these unless a task explicitly asks for them:
 
-- audio systems
+- advanced audio systems beyond the shipped audio package
 - a visual editor
 - plugin ecosystems
 - production-grade multiplayer services

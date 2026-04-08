@@ -1,6 +1,6 @@
 # @arcane-engine/gameplay
 
-Core gameplay primitives for Arcane Engine: health, damage, game state, spawn points, and helper functions.
+Core gameplay primitives for Arcane Engine: health, damage, damage zones, interaction, game state, spawn points, and helper functions.
 
 ## Install
 
@@ -16,6 +16,11 @@ If you want to use `interactionSystem()`, your game should also have:
 - `Position` (and optionally `Rotation`) from `@arcane-engine/renderer`
 - optional `TriggerVolume` from `@arcane-engine/physics` when you want physics-backed proximity
 
+If you want to use `damageZoneSystem()` or `spawnDamageZone()`, your game should also have:
+
+- `triggerVolumeSystem()` from `@arcane-engine/physics`
+- `Position` from `@arcane-engine/renderer`
+
 ## What's included
 
 ### Components
@@ -24,6 +29,7 @@ If you want to use `interactionSystem()`, your game should also have:
 | ------------ | ------------------------------------------------------------- | ----------------------------------------- |
 | `Health`     | `current`, `max`                                              | Hit points                                |
 | `Damage`     | `amount`, `source`                                            | One-shot damage event                     |
+| `DamageZone` | `damagePerSecond`, `burstDamage`, `damageInterval`, `enabled`, `source` | Trigger-backed hazard rules |
 | `Interactable` | `promptText`, `interactionRange`, `enabled`, `requiresFacing`, `cooldown`, `lastActivatedAt` | Standard `E` interaction target |
 | `Activated`  | `activatedBy`                                                 | One-tick interaction event                |
 | `InInteractionRange` | `interactableEntity`, `distance`                      | Current focused interaction target on the player |
@@ -36,6 +42,7 @@ If you want to use `interactionSystem()`, your game should also have:
 ### Systems
 
 - **`healthSystem(world, dt)`** — processes `Damage`, updates `Health`, adds `Dead` at 0 hp, destroys non-player entities, increments `GameState.kills` for hostiles.
+- **`damageZoneSystem(world, dt)`** — reads trigger membership from `TriggerVolume`, applies burst damage on entry, and throttles continuous hazard damage while targets stay inside.
 - **`gameStateSystem(world, dt)`** — updates `GameState.elapsedTime`, checks win condition (all hostiles destroyed).
 - **`interactionSystem(world, dt)`** — finds the closest valid interactable, writes `InInteractionRange` to the player, and adds `Activated` when the player presses `E`.
 
@@ -44,8 +51,10 @@ Both systems are pure ECS — no DOM, no rendering.
 ### Utilities
 
 - **`dealDamage(world, target, amount, source?)`** — adds a `Damage` component to the target.
+- **`spawnDamageZone(world, physicsCtx, options)`** — creates a trigger-backed hazard entity with `DamageZone`.
 - **`makeInteractable(world, entity, options)`** — marks an entity as interactable with standard defaults.
 - **`respawn(world, entity, spawnId?)`** — resets health, removes `Dead`, repositions to a spawn point, resets game phase for players.
+- **`setDamageZoneEnabled(world, entity, enabled)`** — toggles whether a hazard is active.
 - **`setInteractableEnabled(world, entity, enabled)`** — toggles whether an interactable can be focused or activated.
 - **`wasActivated(world, entity)`** — returns this tick's `Activated` event data or `null`.
 - **`getGameState(world)`** — returns the `GameState` data from the singleton entity.
@@ -88,6 +97,49 @@ const gs = getGameState(world);
 console.log(gs?.kills); // 1
 console.log(gs?.score); // 10
 ```
+
+## Hazard Zone Example
+
+This shows the standard trigger-backed hazard flow. Run the trigger system
+before `damageZoneSystem()`, and run `healthSystem()` after it so the queued
+`Damage` gets resolved in the same frame.
+
+```ts
+import { registerSystem } from '@arcane-engine/core';
+import {
+  createPhysicsContext,
+  initPhysics,
+  physicsSystem,
+  triggerVolumeSystem,
+} from '@arcane-engine/physics';
+import {
+  damageZoneSystem,
+  healthSystem,
+  spawnDamageZone,
+} from '@arcane-engine/gameplay';
+
+await initPhysics();
+
+const physics = createPhysicsContext();
+registerSystem(world, physicsSystem(physics));
+registerSystem(world, triggerVolumeSystem(physics));
+registerSystem(world, damageZoneSystem);
+registerSystem(world, healthSystem);
+
+spawnDamageZone(world, physics, {
+  position: { x: 7.75, y: 2, z: 7.75 },
+  shape: 'box',
+  halfExtents: { x: 1.4, y: 2, z: 1.4 },
+  damagePerSecond: 2 / 0.35,
+  damageInterval: 0.35,
+});
+```
+
+`burstDamage` applies once when a target enters the zone. Continuous damage uses
+`damagePerSecond * damageInterval` each tick, or `damagePerSecond * dt` when
+`damageInterval` is `0`. When `source` is omitted, the zone entity itself is
+written to `Damage.source` so later game code can inspect which hazard dealt
+the damage.
 
 ## Door Switch Example
 

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Activated } from '../src/components/Activated.js';
 import { Health } from '../src/components/Health.js';
 import { Damage } from '../src/components/Damage.js';
+import { DamageZone } from '../src/components/DamageZone.js';
 import { GameState } from '../src/components/GameState.js';
 import { Hostile } from '../src/components/Hostile.js';
 import { InInteractionRange } from '../src/components/InInteractionRange.js';
@@ -25,6 +26,21 @@ describe('Damage', () => {
   });
   it('provides defaults with null source', () => {
     expect(Damage.default()).toEqual({ amount: 1, source: null });
+  });
+});
+
+describe('DamageZone', () => {
+  it('has correct name', () => {
+    expect(DamageZone.name).toBe('DamageZone');
+  });
+  it('provides defaults', () => {
+    expect(DamageZone.default()).toEqual({
+      damagePerSecond: 0,
+      burstDamage: 0,
+      damageInterval: 0,
+      enabled: true,
+      source: null,
+    });
   });
 });
 

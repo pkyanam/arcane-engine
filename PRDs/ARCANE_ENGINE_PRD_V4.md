@@ -3,13 +3,18 @@
 ### Target: Gameplay-Ready Browser Game Framework
 Version 4.0 • April 2026 • Proposed roadmap after V3.0
 
+Status note as of April 7, 2026: Stages 24-29 are now shipped in the repo.
+The remaining sections below are roadmap items unless they are explicitly
+marked complete.
+
 ---
 
 ## 1. Overview
 
 This document proposes the V4 roadmap for Arcane Engine after the completed V3 asset-ready track.
 
-**Stages 1–23 are complete in the repo.** Arcane Engine now has:
+**Stages 1–23 are complete in the repo, and Stages 24–29 are now shipped as well.**
+Arcane Engine now has:
 
 - core ECS (world, entities, components, queries, systems, scenes, game loop)
 - Three.js renderer (transforms, lighting, shadows, environment)
@@ -17,6 +22,8 @@ This document proposes the V4 roadmap for Arcane Engine after the completed V3 a
 - scene system (file-based scenes, manager, lifecycle, preload seam)
 - physics (Rapier WASM — rigid bodies, colliders, kinematic bodies, character controller, raycast)
 - asset pipeline (textures, glTF/GLB models, animation playback, cache, preload manifests)
+- gameplay package primitives (health, damage, game state, interaction, damage zones)
+- audio package support for SFX, spatial sound, music playback, volume controls, and autoplay-safe resume
 - multiplayer relay (WebSocket server, ghost sync, smoothing)
 - CLI scaffolder (`create-arcane` with `starter` and `asset-ready` templates)
 - hello-cube teaching example (FPS, combat, HUD, multiplayer, touch, imported assets)
@@ -97,8 +104,10 @@ V4 is designed for development by AI coding agents (Claude Code, Codex, Cursor).
 | `@arcane-engine/core` | ECS world, queries, systems, scene manager, game loop |
 | `@arcane-engine/renderer` | Three.js setup, transforms, lighting, shadows, render system |
 | `@arcane-engine/assets` | textures, models, animation playback, preload, cache, disposal |
+| `@arcane-engine/audio` | Web Audio setup, decoded sound caching, SFX playback, spatial sound, music playback, mixer, cleanup |
 | `@arcane-engine/input` | keyboard, mouse, pointer lock, FPS camera, movement, touch |
 | `@arcane-engine/physics` | Rapier world, rigid bodies, colliders, character controller, raycast |
+| `@arcane-engine/gameplay` | health, damage, game state, spawn points, interaction, damage zones |
 | `@arcane-engine/server` | WebSocket relay (Node.js, no game logic) |
 | `@arcane-engine/create-arcane` | CLI scaffolder, templates |
 
@@ -106,17 +115,12 @@ V4 is designed for development by AI coding agents (Claude Code, Codex, Cursor).
 
 | Gap | Impact |
 |-----|--------|
-| No audio at all | Games feel lifeless without sound |
-| No trigger/interaction system | Every game reinvents proximity checks and "press E" |
 | No AI/NPC primitives | Enemy behavior requires building state machines from scratch |
 | No particle or VFX system | Visual feedback limited to mesh swaps and DOM overlays |
 | No post-processing | Emissive materials, damage effects, and atmosphere need bloom/vignette |
 | No timer or scoring framework | Every game reinvents countdowns, stats, and result screens |
 | No local persistence | Best scores, settings, and progress vanish on refresh |
 | HUD is raw DOM only | No structured approach to game UI, prompts, or overlays |
-| Gameplay primitives are example-local | Health, Damage, GameState stuck in hello-cube |
-| No interaction or activation pattern | Objectives, doors, switches need a standard approach |
-
 ---
 
 ## 3. V4 Architecture Direction
@@ -165,7 +169,7 @@ examples/hello-cube       → all packages
 
 ## 4. Stage 24 — Gameplay Package: Core Primitives
 
-**Status:** Proposed.
+**Status:** Complete. Shipped in the repo on April 2, 2026.
 
 ### Goal
 
@@ -281,7 +285,7 @@ getPlayer(world: World): Entity | null
 
 ## 5. Stage 25 — Trigger Volume System
 
-**Status:** Proposed.
+**Status:** Complete. Shipped in the repo on April 2, 2026.
 
 ### Goal
 
@@ -368,7 +372,7 @@ getEntitiesInTrigger(world: World, triggerEntity: Entity): Entity[]
 
 ## 6. Stage 26 — Interaction System
 
-**Status:** Proposed. Depends on Stage 25 (trigger volumes).
+**Status:** Complete. Shipped in the repo on April 2, 2026.
 
 ### Goal
 
@@ -463,7 +467,7 @@ setInteractableEnabled(world: World, entity: Entity, enabled: boolean): void
 
 ## 7. Stage 27 — Damage Zone System
 
-**Status:** Proposed. Depends on Stages 24 (gameplay) and 25 (triggers).
+**Status:** Complete. Shipped in the repo on April 2, 2026.
 
 ### Goal
 
@@ -541,7 +545,7 @@ setDamageZoneEnabled(world: World, entity: Entity, enabled: boolean): void
 
 ## 8. Stage 28 — Audio Package: Foundation
 
-**Status:** Proposed.
+**Status:** Complete. Shipped in the repo on April 2, 2026.
 
 ### Goal
 
@@ -644,7 +648,7 @@ resumeAudioOnInteraction(audioCtx: AudioContext): Promise<void>
 
 ## 9. Stage 29 — Audio Package: Spatial Sound and Music
 
-**Status:** Proposed. Depends on Stage 28.
+**Status:** Complete. Shipped in the repo on April 7, 2026.
 
 ### Goal
 
@@ -720,6 +724,14 @@ updateAudioListener(audioCtx: AudioContext, camera: THREE.Camera): void
 - spatial audio and music work together without channel conflicts
 - all new APIs have Vitest coverage and JSDoc
 - package README documents "attach a sound to an entity" and "play background music" workflows
+
+### Shipped Outcome
+
+- `@arcane-engine/audio` now exports `SpatialAudio`, `spatialAudioSystem(audioCtx)`, `playSFXAtPosition(...)`, and `updateAudioListener(...)`.
+- Positional sounds use `PannerNode` directly and stay opt-in.
+- Music now plays on `musicGain` through `playMusic(...)`, `stopMusic(...)`, and `crossfadeMusic(...)`.
+- `disposeAudioContext(...)` now cleans up active spatial and music playback alongside Stage 28 SFX handles.
+- Package docs, tests, and root docs now reflect the shipped Stage 29 surface.
 
 ### Agent Notes
 
@@ -1733,11 +1745,11 @@ Align all documentation with V4, finalize the release, and ensure the repo is re
 |-------|------|--------|-------------|
 | 1–12 | V1 + V2 track | ✅ complete | ECS through multiplayer FPS prototype |
 | 13–23 | V3 track | ✅ complete | Asset pipeline, animation, preload, polish |
-| **24** | **Gameplay Package: Core Primitives** | proposed | Health, Damage, GameState, Player, SpawnPoint promoted |
-| **25** | **Trigger Volume System** | proposed | Rapier sensor triggers with enter/stay/exit |
-| **26** | **Interaction System** | proposed | "Press E to interact", Activated events |
-| **27** | **Damage Zone System** | proposed | Environmental hazard zones using triggers |
-| **28** | **Audio: Foundation** | proposed | Web Audio API, SFX loading and playback |
+| **24** | **Gameplay Package: Core Primitives** | ✅ complete | Health, Damage, GameState, Player, SpawnPoint promoted |
+| **25** | **Trigger Volume System** | ✅ complete | Rapier sensor triggers with enter/stay/exit |
+| **26** | **Interaction System** | ✅ complete | "Press E to interact", Activated events |
+| **27** | **Damage Zone System** | ✅ complete | Environmental hazard zones using triggers |
+| **28** | **Audio: Foundation** | ✅ complete | Web Audio API, SFX loading and playback |
 | **29** | **Audio: Spatial Sound and Music** | proposed | 3D positional audio, music crossfade |
 | **30** | **AI Behavior Primitives** | proposed | FSM, patrol, detection, line of sight |
 | **31** | **Particle and VFX System** | proposed | Emitters, particles, screen flash, screen shake |

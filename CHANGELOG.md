@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format is based on 
 
 ## [Unreleased]
 
+### Added
+
+- **`@arcane-engine/gameplay`** now ships trigger-backed `DamageZone` hazards, `damageZoneSystem()`, `spawnDamageZone(...)`, and `setDamageZoneEnabled(...)`, and `hello-cube` now consumes the shared gameplay hazard flow.
+- **`@arcane-engine/audio`** now ships the full Stage 29 audio surface: Web Audio context setup, decoded sound caching, non-spatial SFX playback, positional SFX, `SpatialAudio`, listener syncing, music playback/crossfades, channel volume controls, autoplay-safe resume helpers, and explicit cleanup.
+
+### Changed
+
+- **Repo release plumbing** now includes `@arcane-engine/audio` in the root test build path and workspace lockfile metadata.
+- **PRD V4** and the stage handoff docs now mark Stage 29 as shipped and point the next active roadmap step at Stage 30.
+
+### Docs
+
+- Root docs, agent docs, contributor guidance, and the package README now describe `@arcane-engine/audio` as a shipped workspace package with spatial audio and music support.
+
 ## [3.0.2] - 2026-04-02
 
 ### Added

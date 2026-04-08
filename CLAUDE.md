@@ -41,6 +41,7 @@ Useful entry points:
 - `packages/core/src/index.ts`
 - `packages/renderer/src/index.ts`
 - `packages/assets/src/index.ts`
+- `packages/audio/src/index.ts`
 - `packages/input/src/index.ts`
 - `packages/physics/src/index.ts`
 - `packages/gameplay/src/index.ts`
@@ -53,9 +54,10 @@ Useful entry points:
 packages/core          ECS primitives
 packages/renderer      Three.js bridge
 packages/assets        asset loading and animation helpers
+packages/audio         Web Audio loading, spatial sound, music, mixer, cleanup
 packages/input         browser input and camera helpers
 packages/physics       Rapier integration
-packages/gameplay      gameplay primitives and interaction helpers
+packages/gameplay      gameplay primitives, damage zones, and interaction helpers
 packages/server        tiny WebSocket relay
 packages/create-arcane project scaffolder
 templates/starter      minimal generated app
@@ -80,9 +82,10 @@ PRDs/                  historical planning docs
 | `@arcane-engine/core` | ECS world, queries, systems, scene manager, loop |
 | `@arcane-engine/renderer` | renderer setup, transform components, render helpers |
 | `@arcane-engine/assets` | textures, models, animation, preload, disposal |
+| `@arcane-engine/audio` | Web Audio loading, SFX playback, spatial sound, music playback, mixer, and cleanup |
 | `@arcane-engine/input` | input state, movement, camera helpers |
 | `@arcane-engine/physics` | Rapier world, colliders, character controller |
-| `@arcane-engine/gameplay` | health, damage, game state, spawn points, interaction |
+| `@arcane-engine/gameplay` | health, damage, damage zones, game state, spawn points, interaction |
 | `@arcane-engine/server` | relay only, no game simulation |
 | `@arcane-engine/create-arcane` | scaffolding |
 
@@ -119,7 +122,7 @@ pnpm build
 
 Do not add these unless asked:
 
-- audio
+- advanced audio systems beyond the shipped audio package
 - plugin ecosystems
 - production-grade multiplayer backends
 - hidden asset pipelines

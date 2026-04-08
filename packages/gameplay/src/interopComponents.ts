@@ -33,7 +33,21 @@ export const RotationRef = defineComponent<{
 }>('Rotation', () => ({ x: 0, y: 0, z: 0 }));
 
 export const TriggerVolumeRef = defineComponent<{
+  shape: 'box' | 'sphere';
+  hx: number;
+  hy: number;
+  hz: number;
+  radius: number;
   entities: Set<Entity>;
+  entered: Set<Entity>;
+  exited: Set<Entity>;
 }>('TriggerVolume', () => ({
+  shape: 'box',
+  hx: 0.5,
+  hy: 0.5,
+  hz: 0.5,
+  radius: 0.5,
   entities: new Set<Entity>(),
+  entered: new Set<Entity>(),
+  exited: new Set<Entity>(),
 }));

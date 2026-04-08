@@ -130,14 +130,9 @@ export function spawnFpsArenaWorld(world: World, ctx: RendererContext, buckets: 
 }
 
 export const DAMAGE_ZONE_FPS = {
-  zone: {
-    minX: 6.35,
-    maxX: 9.15,
-    minY: 0,
-    maxY: 4,
-    minZ: 6.35,
-    maxZ: 9.15,
-  },
-  intervalSec: 0.35,
-  amount: 2,
+  position: { x: 7.75, y: 2, z: 7.75 },
+  shape: 'box',
+  halfExtents: { x: 1.4, y: 2, z: 1.4 },
+  damagePerSecond: 2 / 0.35,
+  damageInterval: 0.35,
 } as const;

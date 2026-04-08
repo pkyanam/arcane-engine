@@ -3,16 +3,17 @@ import type { World } from '@arcane-engine/core';
 import {
   characterControllerSystem,
   physicsSystem,
+  triggerVolumeSystem,
 } from '@arcane-engine/physics';
 import { fpsCameraSystem } from '@arcane-engine/input';
 import { renderSystem } from '@arcane-engine/renderer';
+import { damageZoneSystem, spawnDamageZone } from '@arcane-engine/gameplay';
 import {
   DAMAGE_ZONE_FPS,
   PLAYER_JUMP_SPEED,
   PLAYER_MOVE_SPEED,
   PLAYER_SPAWN,
 } from '../src/fpsArenaSetup.js';
-import { damageZoneSystem } from '../src/damageZoneSystem.js';
 import { ensurePhysicsReady } from '../src/ensurePhysicsReady.js';
 import { gameStateSystem } from '../src/gameStateSystem.js';
 import { getHelloCubeSceneCopy } from '../src/helloCubePresentation.js';
@@ -43,9 +44,11 @@ export function setup(world: World): void {
 
   spawnFpsPlayerRig(world);
   spawnFpsGameState(world);
+  spawnDamageZone(world, shared.physicsCtx, DAMAGE_ZONE_FPS);
 
   registerSystem(world, hitFlashRestoreSystem());
   registerSystem(world, physicsSystem(shared.physicsCtx));
+  registerSystem(world, triggerVolumeSystem(shared.physicsCtx));
   registerSystem(world, characterControllerSystem(shared.physicsCtx));
   registerSystem(world, fpsCameraSystem(shared.ctx));
   registerSystem(
@@ -54,7 +57,7 @@ export function setup(world: World): void {
       onFire: () => shared?.triggerMuzzleFlash(),
     }),
   );
-  registerSystem(world, damageZoneSystem(DAMAGE_ZONE_FPS));
+  registerSystem(world, damageZoneSystem);
   registerSystem(world, healthSystem(shared.physicsCtx, shared.ctx));
   registerSystem(
     world,
